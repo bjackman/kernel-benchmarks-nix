@@ -22,10 +22,23 @@
               '';
             });
           })
-        ]; };
+        ];
+      };
     in
     {
       packages."${system}" = rec {
+        # Outer wrapper for run-benchmark. Optionally boots a VM and runs it
+        # inside that.
+        benchmarks-wrapper = pkgs.callPackage ./packages/benchmarks-wrapper.nix {
+          # Here we pass packages' dependencies as arguments. I'm not sure if
+          # this is good Nix practice or if it's preferred to add them to pkgs
+          # via an overlay or something.
+          inherit bpftrace-scripts;
+          inherit run-benchmark;
+        };
+
+        bpftrace-scripts = pkgs.callPackage ./packages/bpftrace-scripts.nix { };
+
         # Very thin inner wrapper, mostly just a helper for benchmarks-wrapper.
         # This runs inside the guest when running on a VM.
         run-benchmark = pkgs.callPackage ./packages/run-benchmark.nix {

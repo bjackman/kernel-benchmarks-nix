@@ -1,0 +1,19 @@
+#!/usr/bin/env bpftrace
+
+tracepoint:asi:asi_exit_pf
+{
+    @total_exits = count();
+    @stack_counts[kstack] = count();
+    @addr_top32[args.address >> 32] = count();
+}
+
+END
+{
+    // Print this manually because we want hex.
+    printf("\nTop 32-bits of faulting address\n");
+    for ($kv : @addr_top32) {
+        printf("  0x%08x: %d\n", (uint32)$kv.0, (int64)$kv.1);
+    }
+    // Clear it to supress bpftrace's automatic map dump
+    clear(@addr_top32);
+}
