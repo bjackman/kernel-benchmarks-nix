@@ -69,7 +69,7 @@ for i in $(seq "$ITERATIONS"); do
             --output="$OUT_DIR/fio_output_ext4_$i.json" --output-format=json+
     else
         before_ns="$(date +%s%N)"
-        compile-kernel
+        bench-compile-kernel
         after_ns="$(date +%s%N)"
         echo "$(( after_ns - before_ns ))" > "$OUT_DIR/compile-kernel_elapsed_ns_$i"
     fi
