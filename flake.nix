@@ -10,10 +10,28 @@
     }:
     let
       system = "x86_64-linux";
-      pkgs = import nixpkgs { inherit system; };
+      pkgs = import nixpkgs {
+        inherit system;
+        # https://github.com/NixOS/nixpkgs/pull/408168/
+        overlays = [
+          (final: prev: {
+            docopts = prev.docopts.overrideAttrs (prev: {
+              postInstall = ''
+                cp ${prev.src}/docopts.sh $out/bin/docopts.sh
+                chmod +x $out/bin/docopts.sh
+              '';
+            });
+          })
+        ]; };
     in
     {
-      packages."${system}" = {
+      packages."${system}" = rec {
+        # Very thin inner wrapper, mostly just a helper for benchmarks-wrapper.
+        # This runs inside the guest when running on a VM.
+        run-benchmark = pkgs.callPackage ./packages/run-benchmark.nix {
+          inherit compile-kernel;
+        };
+
         # Package that compiles a kernel, as a "benchmark"
         compile-kernel = pkgs.callPackage ./packages/benchmarks/compile-kernel.nix { };
       };
