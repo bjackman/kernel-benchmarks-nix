@@ -4,7 +4,7 @@ This is the beginning of untangling of the mess in [this
 repo](https://github.com/bjackman/nixos-flake) where I was simultaneously
 learning Nix and developing a bunch of janky scripts for benchmarking ASI.
 
-The goal is to pick stuff apart here to get somethine like that but reusable and
+The goal is to pick stuff apart here to get something like that but reusable and
 comprehensible. It's not there yet.
 
 ## Components
