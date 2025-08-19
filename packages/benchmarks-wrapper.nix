@@ -1,4 +1,8 @@
-{ pkgs, bpftrace-scripts, run-benchmark }:
+{
+  pkgs,
+  bpftrace-scripts,
+  run-benchmark,
+}:
 pkgs.writeShellApplication {
   name = "benchmarks-wrapper";
   runtimeInputs =

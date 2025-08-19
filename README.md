@@ -33,3 +33,6 @@ comprehensible. It's not there yet.
   JANK: This has some logic for "instrumentation" but actually it just supports
   calling a single hard-coded `bpftrace` script that measures some specific
   stuff I cared about.
+
+- `deploy-config` provides a default idiotic script for deploying a NixOS
+  configuration to a host over SSH. This is currently UNTESTED.

@@ -27,6 +27,9 @@
     in
     {
       packages."${system}" = rec {
+        # Default script for deploying a NixOS configuration to a host.
+        deploy-config = pkgs.callPackage ./packages/deploy-config.nix { };
+
         # Outer wrapper for run-benchmark. Optionally boots a VM and runs it
         # inside that.
         benchmarks-wrapper = pkgs.callPackage ./packages/benchmarks-wrapper.nix {
