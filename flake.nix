@@ -82,8 +82,14 @@
       };
 
       formatter."${system}" = pkgs.nixfmt-tree;
+
+      # This devShell provides a bunch of tools for running these benchmarks.
       devShells."${system}".default = pkgs.mkShell {
-        packages = [ pkgs.nixos-rebuild ];
+        packages = [
+          pkgs.nixos-rebuild
+          falba.packages."${system}".falba-with-duckdb
+          self.packages."${system}".benchmark-and-import
+        ];
       };
     };
 }
