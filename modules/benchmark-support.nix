@@ -1,6 +1,12 @@
+# Not sure the proper way to do this, but I wanna pass some args into this file
+# when I import it from the Flake, so that's the first arg. The second arg is
+# the args provided by the NixOS module system.
+{
+  self,
+  pkgs,
+}:
 {
   config,
-  self,
   lib,
   ...
 }:
@@ -29,5 +35,9 @@
         '';
       in
       revWarnings ++ variantWarnings;
+
+    environment.systemPackages = [
+      self.packages."${pkgs.stdenv.system}".benchmarks-wrapper
+    ];
   };
 }

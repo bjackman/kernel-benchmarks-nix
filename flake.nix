@@ -77,7 +77,9 @@
       # Some aspects of the scripts are coupled with the NixOS configuration on
       # the target. Importing this module is supposed to handle the requirements
       # for your config.
-      nixosModules.benchmark-support = import ./modules/benchmark-support.nix;
+      nixosModules.benchmark-support = import ./modules/benchmark-support.nix {
+        inherit self pkgs;
+      };
 
       formatter."${system}" = pkgs.nixfmt-tree;
       devShells."${system}".default = pkgs.mkShell {
