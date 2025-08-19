@@ -1,5 +1,89 @@
 {
   "nodes": {
+    "falba": {
+      "inputs": {
+        "flake-utils": "flake-utils",
+        "limmat": "limmat",
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1752676118,
+        "narHash": "sha256-N1vYH6Q+l8Woy/qbxW9rDiIir7EHR5VkoXqa5eQ/k1k=",
+        "owner": "bjackman",
+        "repo": "falba-go",
+        "rev": "a50831d368f03b20f26ebd613b5ae9d9ea2212f9",
+        "type": "github"
+      },
+      "original": {
+        "owner": "bjackman",
+        "repo": "falba-go",
+        "type": "github"
+      }
+    },
+    "flake-utils": {
+      "inputs": {
+        "systems": "systems"
+      },
+      "locked": {
+        "lastModified": 1731533236,
+        "narHash": "sha256-l0KFg5HjrsfsO/JpG+r7fRrqm12kzFHyUHqHCVpMMbI=",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "11707dc2f618dd54ca8739b309ec4fc024de578b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "type": "github"
+      }
+    },
+    "limmat": {
+      "inputs": {
+        "naersk": "naersk",
+        "nixpkgs": [
+          "falba",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1750851759,
+        "narHash": "sha256-huZlLkKhHJWdxFaP2gj2i1el8INCdNSJFTc3OXHD1Ew=",
+        "owner": "bjackman",
+        "repo": "limmat",
+        "rev": "09e35f4dd9f74de69b7389e41e9094e73d5fafa6",
+        "type": "github"
+      },
+      "original": {
+        "owner": "bjackman",
+        "repo": "limmat",
+        "type": "github"
+      }
+    },
+    "naersk": {
+      "inputs": {
+        "nixpkgs": [
+          "falba",
+          "limmat",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1745925850,
+        "narHash": "sha256-cyAAMal0aPrlb1NgzMxZqeN1mAJ2pJseDhm2m6Um8T0=",
+        "owner": "nix-community",
+        "repo": "naersk",
+        "rev": "38bc60bbc157ae266d4a0c96671c6c742ee17a5f",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-community",
+        "repo": "naersk",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1748026580,
@@ -18,7 +102,23 @@
     },
     "root": {
       "inputs": {
+        "falba": "falba",
         "nixpkgs": "nixpkgs"
+      }
+    },
+    "systems": {
+      "locked": {
+        "lastModified": 1681028828,
+        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
+        "owner": "nix-systems",
+        "repo": "default",
+        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-systems",
+        "repo": "default",
+        "type": "github"
       }
     }
   },

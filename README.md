@@ -36,3 +36,7 @@ comprehensible. It's not there yet.
 
 - `deploy-config` provides a default idiotic script for deploying a NixOS
   configuration to a host over SSH. This is currently UNTESTED.
+
+- `benchmark-configs` is the main entry point th is the main entry point for
+  running benchmarks. You run it on your local development machine and it
+  deploys configs, runs benchmarks on them, and fetches result data.

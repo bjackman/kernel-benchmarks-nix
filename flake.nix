@@ -1,12 +1,17 @@
 {
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=25.05";
+    falba = {
+      url = "github:bjackman/falba-go";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
     {
       self,
       nixpkgs,
+      falba,
     }:
     let
       system = "x86_64-linux";
@@ -27,6 +32,14 @@
     in
     {
       packages."${system}" = rec {
+        # This is the main entry point for running benchmarks. You run it on
+        # your local development machine and it deploys configs, runs benchmarks
+        # on them, and fetches result data.
+        benchmark-configs = pkgs.callPackage ./packages/benchmark-configs.nix {
+          inherit deploy-config;
+          falba = falba.packages.x86_64-linux.falba;
+        };
+
         # Default script for deploying a NixOS configuration to a host.
         deploy-config = pkgs.callPackage ./packages/deploy-config.nix { };
 
