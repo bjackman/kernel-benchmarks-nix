@@ -47,4 +47,4 @@ if "$ARGS_guest"; then
 else
     test_name="$ARGS_benchmark"_host
 fi
-falba import --test-name "$test_name" "$local_results_dir"/*
+falba --result-db "$ARGS_result_db" import --test-name "$test_name" "$local_results_dir"/*
