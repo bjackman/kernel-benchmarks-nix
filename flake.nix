@@ -40,6 +40,15 @@
           falba = falba.packages.x86_64-linux.falba;
         };
 
+        # This like benchmark-configs but it doesn't take care of deploying
+        # anything for you, it just runs the benchmark on the remote host and
+        # fetches the result.
+        # TODO: This is horribly duplicated with benchmark-configs. But this
+        # whole thing is a mess anyway.
+        benchmark-and-import = pkgs.callPackage ./packages/benchmark-and-import.nix {
+          falba = falba.packages.x86_64-linux.falba;
+        };
+
         # Default script for deploying a NixOS configuration to a host.
         deploy-config = pkgs.callPackage ./packages/deploy-config.nix { };
 
