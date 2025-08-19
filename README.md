@@ -40,3 +40,8 @@ comprehensible. It's not there yet.
 - `benchmark-configs` is the main entry point th is the main entry point for
   running benchmarks. You run it on your local development machine and it
   deploys configs, runs benchmarks on them, and fetches result data.
+
+- A NixOS module called `benchmark-support.nix` which is supposed to deal with
+  any parts of the benchmarking logic that are coupled to the system config.
+  In practice this currently just validates stuff and tells you to set it
+  yourself.
