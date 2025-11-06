@@ -67,11 +67,11 @@
         # Very thin inner wrapper, mostly just a helper for benchmarks-wrapper.
         # This runs inside the guest when running on a VM.
         run-benchmark = pkgs.callPackage ./packages/run-benchmark.nix {
-          inherit compile-kernel;
+          inherit (benchmarks) compile-kernel;
         };
 
         # Package that compiles a kernel, as a "benchmark"
-        compile-kernel = pkgs.callPackage ./packages/benchmarks/compile-kernel.nix { };
+        benchmarks.compile-kernel = pkgs.callPackage ./packages/benchmarks/compile-kernel.nix { };
       };
 
       # Some aspects of the scripts are coupled with the NixOS configuration on
