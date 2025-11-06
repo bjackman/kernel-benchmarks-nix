@@ -1,6 +1,7 @@
 {
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=25.05";
+    nixpkgs-unstable.url = "github:nixos/nixpkgs?ref=nixos-unstable";
     falba = {
       url = "github:bjackman/falba-go";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -11,6 +12,7 @@
     {
       self,
       nixpkgs,
+      nixpkgs-unstable,
       falba,
     }:
     let
@@ -29,6 +31,7 @@
           })
         ];
       };
+      pkgsUnstable = import nixpkgs-unstable { inherit system; };
     in
     {
       packages."${system}" = rec {
@@ -72,6 +75,11 @@
 
         # Package that compiles a kernel, as a "benchmark"
         benchmarks.compile-kernel = pkgs.callPackage ./packages/benchmarks/compile-kernel.nix { };
+        benchmarks.firecracker-boot = pkgs.callPackage ./packages/benchmarks/firecracker-boot.nix {
+          inherit (nixpkgs.lib) nixosSystem;
+          makeExt4Fs = pkgs.callPackage "${nixpkgs}/nixos/lib/make-ext4-fs.nix";
+          firecracker = pkgsUnstable.firecracker;
+        };
       };
 
       # Some aspects of the scripts are coupled with the NixOS configuration on
