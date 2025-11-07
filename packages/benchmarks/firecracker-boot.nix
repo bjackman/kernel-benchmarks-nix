@@ -14,6 +14,7 @@ let
     system = "x86_64-linux";
     modules = [
       microvm.nixosModules.microvm
+      "${pkgs.path}/nixos/modules/profiles/minimal.nix"
       {
         networking.hostName = "my-microvm";
         users.users.root.password = "";
@@ -31,6 +32,11 @@ let
             ExecStart = "/run/current-system/systemd/bin/systemctl reboot";
           };
         };
+        # Console is slow and all the details systemd prints are not interesting.
+        # For some reason this doesn't work though.
+        # boot.kernelParams = [ "systemd.log_level=err" ];
+        # Attempt to avoid unnecesary stuff
+        nix.enable = false;
       }
     ];
   };
