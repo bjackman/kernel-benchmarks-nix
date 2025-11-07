@@ -85,7 +85,7 @@
         benchmarks.compile-kernel = pkgs.callPackage ./packages/benchmarks/compile-kernel.nix { };
         benchmarks.firecracker-boot = pkgs.callPackage ./packages/benchmarks/firecracker-boot.nix {
           inherit (nixpkgs.lib) nixosSystem;
-          inherit microvm;
+          inherit microvm pkgsUnstable;
           makeExt4Fs = pkgs.callPackage "${nixpkgs}/nixos/lib/make-ext4-fs.nix";
         };
       };

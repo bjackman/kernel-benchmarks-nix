@@ -1,6 +1,7 @@
 # Boots up a NixOS VM in Firecracker then shuts down again.
 {
   pkgs,
+  pkgsUnstable,
   # This is the library function provided by the nixpkgs flake. It needs to be
   # passed in as a package arg. This is probably stupid, there is probably a way
   # to generate the configuration directly from something availble in pkgs.
@@ -37,6 +38,20 @@ let
         # boot.kernelParams = [ "systemd.log_level=err" ];
         # Attempt to avoid unnecesary stuff
         nix.enable = false;
+      }
+
+      # This is a bit weird - we're in the definition of the guest, but this is
+      # actually also where the VMM for the host gets defined.
+      # Use Patrick Roy's modified version of Firecracker that has support for
+      # unmapping guest_memfd from the physmap via
+      # GUEST_MEMFD_FLAG_NO_DIRECT_MAP.
+      {
+        nixpkgs.overlays = [
+          (final: prev: {
+            # Use pkgsUnstable to get new Rust toolchain required by Patrick's code.
+            firecracker = pkgsUnstable.callPackage ../firecracker.nix { };
+          })
+        ];
       }
     ];
   };
