@@ -6,6 +6,13 @@
       url = "github:bjackman/falba-go";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    microvm = {
+      # Use my branch that contains some speedups.
+      # https://github.com/microvm-nix/microvm.nix/pull/429
+      # https://github.com/microvm-nix/microvm.nix/pull/428
+      url = "github:bjackman/microvm.nix?ref=brendan";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -14,6 +21,7 @@
       nixpkgs,
       nixpkgs-unstable,
       falba,
+      microvm,
     }:
     let
       system = "x86_64-linux";
@@ -77,8 +85,8 @@
         benchmarks.compile-kernel = pkgs.callPackage ./packages/benchmarks/compile-kernel.nix { };
         benchmarks.firecracker-boot = pkgs.callPackage ./packages/benchmarks/firecracker-boot.nix {
           inherit (nixpkgs.lib) nixosSystem;
+          inherit microvm;
           makeExt4Fs = pkgs.callPackage "${nixpkgs}/nixos/lib/make-ext4-fs.nix";
-          firecracker = pkgsUnstable.firecracker;
         };
       };
 
