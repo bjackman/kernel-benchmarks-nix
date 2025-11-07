@@ -19,7 +19,15 @@ let
       {
         networking.hostName = "my-microvm";
         users.users.root.password = "";
-        microvm.hypervisor = "firecracker";
+        microvm = {
+          hypervisor = "firecracker";
+          firecracker = {
+            # Set GUEST_MEMFD_FLAG_NO_DIRECT_MAP. This requires synchronous
+            # storage IO (dunno why).
+            driveIoEngine = "Sync";
+            extraConfig.machine-config.secret_free = true;
+          };
+        };
         # Immediately reboot on startup. In Firecracker, rebooting actually
         # shuts down.
         # Not sure why this doesn't work, mabye it's AI slop:

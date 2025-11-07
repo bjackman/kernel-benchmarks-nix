@@ -9,11 +9,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1752676118,
-        "narHash": "sha256-N1vYH6Q+l8Woy/qbxW9rDiIir7EHR5VkoXqa5eQ/k1k=",
+        "lastModified": 1755775379,
+        "narHash": "sha256-y+5bEy8tPDY4Psf2/RWu3Cz49TjQYjXqS0c2y95Esck=",
         "owner": "bjackman",
         "repo": "falba-go",
-        "rev": "a50831d368f03b20f26ebd613b5ae9d9ea2212f9",
+        "rev": "ed48303ca542ea121566c3ed31b1c8045a2f81a6",
         "type": "github"
       },
       "original": {
@@ -89,11 +89,11 @@
         "spectrum": "spectrum"
       },
       "locked": {
-        "lastModified": 1762514836,
-        "narHash": "sha256-2I3m/KwYdvRFpeIyXlJbKDSTxYIZStojzAV1EPUwZMw=",
+        "lastModified": 1762523371,
+        "narHash": "sha256-nDbsYSnMG/+NMVeUpnBryubuTtxtH9VXw4EQJuJ65HY=",
         "owner": "bjackman",
         "repo": "microvm.nix",
-        "rev": "b155ec44f0960bbc03b3992c2267d97d464fbdde",
+        "rev": "bff35602b11885b48a43aba087c708615d6e067a",
         "type": "github"
       },
       "original": {
@@ -143,11 +143,11 @@
     },
     "nixpkgs-unstable": {
       "locked": {
-        "lastModified": 1762111121,
-        "narHash": "sha256-4vhDuZ7OZaZmKKrnDpxLZZpGIJvAeMtK6FKLJYUtAdw=",
+        "lastModified": 1762363567,
+        "narHash": "sha256-YRqMDEtSMbitIMj+JLpheSz0pwEr0Rmy5mC7myl17xs=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "b3d51a0365f6695e7dd5cdf3e180604530ed33b4",
+        "rev": "ae814fd3904b621d8ab97418f1d0f2eb0d3716f4",
         "type": "github"
       },
       "original": {
