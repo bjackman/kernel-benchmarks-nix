@@ -3,7 +3,7 @@ let
   kernel = pkgs.linux;
 in
 pkgs.writeShellApplication {
-  name = "bench-compile-kernel";
+  name = "compile-kernel";
   runtimeInputs = with pkgs; [
     libelf
     elfutils.dev

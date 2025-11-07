@@ -78,7 +78,7 @@
         # Very thin inner wrapper, mostly just a helper for benchmarks-wrapper.
         # This runs inside the guest when running on a VM.
         run-benchmark = pkgs.callPackage ./packages/run-benchmark.nix {
-          inherit (benchmarks) compile-kernel;
+          inherit benchmarks;
         };
 
         # Package that compiles a kernel, as a "benchmark"

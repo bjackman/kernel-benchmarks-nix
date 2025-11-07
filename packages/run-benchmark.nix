@@ -1,8 +1,8 @@
-{ pkgs, compile-kernel }:
+{ pkgs, benchmarks }:
 pkgs.writeShellApplication {
   name = "run-benchmark";
   runtimeInputs =
-    [ compile-kernel ]
+    (builtins.attrValues benchmarks)
     ++ (with pkgs; [
       # Some of these are available in a normal shell but need to be
       # specified explicitly so we can run this via systemd.
