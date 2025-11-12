@@ -65,17 +65,9 @@ let
       }
     ];
   };
-  runner = guestConfig.config.microvm.declaredRunner;
 in
-pkgs.writeShellApplication {
-  name = "firecracker-boot";
-  runtimeInputs = [ runner ];
-  text = ''
-    # Seems the API socket is mandatory
-    microvm-run --help
-  '';
-}
+guestConfig.config.microvm.declaredRunner
 # Hang intermediate targets on the output so they can be built for debug inspection.
 // {
-  inherit guestConfig runner;
+  inherit guestConfig;
 }
