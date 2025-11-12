@@ -26,6 +26,8 @@ let
             # storage IO (dunno why).
             driveIoEngine = "Sync";
             extraConfig.machine-config.secret_free = true;
+            # Support booting on super minimal kernel configs
+            extraArgs = [ "--no-seccomp" ];
           };
         };
         # Immediately reboot on startup. In Firecracker, rebooting actually
