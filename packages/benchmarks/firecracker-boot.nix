@@ -11,63 +11,76 @@
   ...
 }:
 let
-  guestConfig = nixosSystem {
-    system = "x86_64-linux";
-    modules = [
-      microvm.nixosModules.microvm
-      "${pkgs.path}/nixos/modules/profiles/minimal.nix"
-      {
-        networking.hostName = "my-microvm";
-        users.users.root.password = "";
-        microvm = {
-          hypervisor = "firecracker";
-          firecracker = {
-            # Set GUEST_MEMFD_FLAG_NO_DIRECT_MAP. This requires synchronous
-            # storage IO (dunno why).
-            driveIoEngine = "Sync";
-            extraConfig.machine-config.secret_free = true;
-            # Support booting on super minimal kernel configs
-            extraArgs = [ "--no-seccomp" ];
-          };
+  baseModules = [
+    microvm.nixosModules.microvm
+    "${pkgs.path}/nixos/modules/profiles/minimal.nix"
+    {
+      networking.hostName = "my-microvm";
+      users.users.root.password = "";
+      microvm = {
+        hypervisor = "firecracker";
+        firecracker = {
+          # Set GUEST_MEMFD_FLAG_NO_DIRECT_MAP. This requires synchronous
+          # storage IO (dunno why).
+          driveIoEngine = "Sync";
+          # Support booting on super minimal kernel configs
+          extraArgs = [ "--no-seccomp" ];
         };
-        # Immediately reboot on startup. In Firecracker, rebooting actually
-        # shuts down.
-        # Not sure why this doesn't work, mabye it's AI slop:
-        # boot.kernelParams = [ "systemd.success_action=reboot" ];
-        systemd.services.autoreboot = {
-          description = "Immediate reboot after successful boot";
-          wantedBy = [ "multi-user.target" ];
-          after = [ "multi-user.target" ];
-          serviceConfig = {
-            Type = "oneshot";
-            ExecStart = "/run/current-system/systemd/bin/systemctl reboot";
-          };
+      };
+      # Immediately reboot on startup. In Firecracker, rebooting actually
+      # shuts down.
+      # Not sure why this doesn't work, mabye it's AI slop:
+      # boot.kernelParams = [ "systemd.success_action=reboot" ];
+      systemd.services.autoreboot = {
+        description = "Immediate reboot after successful boot";
+        wantedBy = [ "multi-user.target" ];
+        after = [ "multi-user.target" ];
+        serviceConfig = {
+          Type = "oneshot";
+          ExecStart = "/run/current-system/systemd/bin/systemctl reboot";
         };
-        # Console is slow and all the details systemd prints are not interesting.
-        # For some reason this doesn't work though.
-        # boot.kernelParams = [ "systemd.log_level=err" ];
-        # Attempt to avoid unnecesary stuff
-        nix.enable = false;
-      }
+      };
+      # Console is slow and all the details systemd prints are not interesting.
+      # For some reason this doesn't work though.
+      # boot.kernelParams = [ "systemd.log_level=err" ];
+      # Attempt to avoid unnecesary stuff
+      nix.enable = false;
+    }
 
-      # This is a bit weird - we're in the definition of the guest, but this is
-      # actually also where the VMM for the host gets defined.
-      # Use Patrick Roy's modified version of Firecracker that has support for
-      # unmapping guest_memfd from the physmap via
-      # GUEST_MEMFD_FLAG_NO_DIRECT_MAP.
-      {
-        nixpkgs.overlays = [
-          (final: prev: {
-            # Use pkgsUnstable to get new Rust toolchain required by Patrick's code.
-            firecracker = pkgsUnstable.callPackage ../firecracker.nix { };
-          })
-        ];
-      }
-    ];
+    # This is a bit weird - we're in the definition of the guest, but this is
+    # actually also where the VMM for the host gets defined.
+    # Use Patrick Roy's modified version of Firecracker that has support for
+    # unmapping guest_memfd from the physmap via
+    # GUEST_MEMFD_FLAG_NO_DIRECT_MAP.
+    {
+      nixpkgs.overlays = [
+        (final: prev: {
+          # Use pkgsUnstable to get new Rust toolchain required by Patrick's code.
+          firecracker = pkgsUnstable.callPackage ../firecracker.nix { };
+        })
+      ];
+    }
+  ];
+  secretFreeModule = {
+    extraConfig.machine-config.secret_free = true;
+  };
+  baseConfig = nixosSystem {
+    system = "x86_64-linux";
+    modules = baseModules;
+  };
+  secretFreeConfig = nixosSystem {
+    system = "x86_64-linux";
+    modules = baseModules ++ [ secretFreeModule ];
   };
 in
-guestConfig.config.microvm.declaredRunner
-# Hang intermediate targets on the output so they can be built for debug inspection.
-// {
-  inherit guestConfig;
+{
+  base =
+    baseConfig.config.microvm.declaredRunner // {
+      # Hang intermediate targets on the output so they can be built for debug inspection.
+      inherit baseConfig;
+    };
+  secret-free = secretFreeConfig.config.microvm.declaredRunner // {
+    inherit secretFreeConfig;
+  };
+
 }
