@@ -1,5 +1,22 @@
 {
   "nodes": {
+    "firecracker": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1768831912,
+        "narHash": "sha256-qUlkRmGP9vbuQQuHv+fpby3hcJdrYyQjIinzMXMfocM=",
+        "owner": "firecracker-microvm",
+        "repo": "firecracker",
+        "rev": "4c8085a9563f8ca7e8e3caeca99bc3283472a8b1",
+        "type": "github"
+      },
+      "original": {
+        "owner": "firecracker-microvm",
+        "ref": "feature/secret-hiding",
+        "repo": "firecracker",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1764521362,
@@ -18,6 +35,7 @@
     },
     "root": {
       "inputs": {
+        "firecracker": "firecracker",
         "nixpkgs": "nixpkgs"
       }
     }

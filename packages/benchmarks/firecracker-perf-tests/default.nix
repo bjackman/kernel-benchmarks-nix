@@ -1,4 +1,9 @@
-{ pkgs, lib, ... }:
+{
+  pkgs,
+  lib,
+  inputs,
+  ...
+}:
 let
   name = "firecracker-perf-tests";
 in
@@ -6,9 +11,10 @@ in
 # be a function passed into the package.
 pkgs.callPackage ../../wrap-benchmark.nix {
   inherit name;
-  rawBenchmark = pkgs.runCommand name { } ''
-    mkdir -p $out/bin
-    cp ${./firecracker-perf-tests.sh} $out/bin/firecracker-perf-tests
-    chmod +x $out/bin/firecracker-perf-tests
-  '';
+  rawBenchmark = pkgs.writeShellApplication {
+    inherit name;
+    runtimeInputs = [ pkgs.rsync ];
+    text = builtins.readFile ./firecracker-perf-tests.sh;
+    runtimeEnv.FIRECRACKER_SRC = inputs.firecracker;
+  };
 }
