@@ -78,11 +78,10 @@ let
   };
 in
 {
-  base =
-    baseConfig.config.microvm.declaredRunner // {
-      # Hang intermediate targets on the output so they can be built for debug inspection.
-      inherit baseConfig;
-    };
+  base = baseConfig.config.microvm.declaredRunner // {
+    # Hang intermediate targets on the output so they can be built for debug inspection.
+    inherit baseConfig;
+  };
   secret-free = secretFreeConfig.config.microvm.declaredRunner // {
     inherit secretFreeConfig;
   };
