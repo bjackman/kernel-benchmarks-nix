@@ -45,3 +45,25 @@ comprehensible. It's not there yet.
   any parts of the benchmarking logic that are coupled to the system config.
   In practice this currently just validates stuff and tells you to set it
   yourself.
+
+## NOTES: Design
+
+I think the actual design I want here is:
+
+- A standard interface for running a single-node benchmark locally. It has flags
+  like `--iterations`, `--out-dir` and `--instrumentation`. Call this a
+  `benchprog`. Later, benchprogs probably accept parameters.
+- For each benchprog, an optional NixOS module that provides the hard
+  dependencies on the system for running the prog.
+- Some helper scripts for wrapping workloads into benchprogs.
+- A tool that takes a benchprog, plus its NixOS module if there is one, and
+  produces a new benchprog that runs the original one in a NixOS VM.
+- Some basic scripts for deploying NixOS configs, running benchprogs [remotely]
+  and fetching their results into a FALBA DB.
+
+How would this extend to multi-node benchmarks? No idea.
+
+I think it's fine to design this with the assumption that the system is a pretty
+"proper computer" with SSH and stuff.
+
+The user will take care of building the actual host system themselves.
