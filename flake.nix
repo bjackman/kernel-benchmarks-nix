@@ -19,10 +19,12 @@
     in
     {
       packages."${system}" = rec {
-        benchmarks.firecracker-perf-tests =
-          pkgs.callPackage ./packages/benchmarks/firecracker-perf-tests
-            { inherit inputs; };
+        benchmarks.firecracker-perf-tests = pkgs.callPackage ./packages/benchmarks/firecracker-perf-tests {
+          inherit inputs;
+        };
       };
+
+      nixosModules.benchmarks.firecracker-perf-tests = import ./packages/benchmarks/firecracker-perf-tests/module.nix;
 
       formatter."${system}" = pkgs.nixfmt-tree;
 

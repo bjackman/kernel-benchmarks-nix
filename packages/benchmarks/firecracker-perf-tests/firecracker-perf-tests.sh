@@ -2,14 +2,17 @@ set -eux -o pipefail
 
 # https://github.com/firecracker-microvm/firecracker/blob/main/tests/README.md
 
-# Probably it's possible to run this from an arbitrary location but simple easy
-# approach is just to have a local writable tree so we can blindly follow docs.
 cd "$KBN_CACHE_DIR"
-cp -R --no-preserve=ownership "$FIRECRACKER_SRC"/* .
 
-# Need to be able to modify the tree so chmod, but the firecracker devtools is a
-# Docker mess that can leave behind root-owned files. Just ignore those.
-find .  -user $(whoami) | xargs chmod u+w
+# The Firecracker dev tools seem kinda sketchy, unless I run them from a Git
+# tree I can't get them to work properly (just copying from the Nix source
+# derivation and making it writable didn't work). Haven't looked into this
+# carefully.
+if [ ! -d firecracker ]; then
+    git clone https://github.com/firecracker-microvm/firecracker.git
+fi
+cd firecracker
+git checkout "$FIRECRACKER_REV"
 
 export AWS_EMF_ENVIRONMENT=local
 export AWS_EMF_NAMESPACE=local
