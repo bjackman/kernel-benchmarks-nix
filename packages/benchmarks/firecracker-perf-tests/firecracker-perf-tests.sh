@@ -20,6 +20,13 @@ export AWS_EMF_NAMESPACE=local
 tools/devtool -y build
 
 # TODO: Hard coding a specific subtest here.
-tools/devtool -y test --performance -- \
-    -s -m nonci \
-    './integration_tests/performance/test_snapshot.py::test_population_latency[vmlinux-5.10.245-PCI_ON-SF_ON-4-6144-None]'
+TEST='./integration_tests/performance/test_snapshot.py::test_population_latency[vmlinux-5.10.245-PCI_ON-SF_ON-4-6144-None]'
+
+# You configure the location of the output data by pointing --json-report-file
+# to where you want the report.json and it populates the parent directory of
+# that file. But also, it does this relative to a subdirectory of the CWD.
+# Setting an absolute path doesn't work coz it gets interpreted inside a
+# container.
+# TODO: Get the output location from the user.
+mkdir -p output
+tools/devtool -y test --performance -- -s -m nonci "$TEST" --json-report-file=../output/report.json
