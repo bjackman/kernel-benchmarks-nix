@@ -75,4 +75,7 @@ TEST='./integration_tests/performance/test_snapshot.py::test_population_latency[
 local_out_dir=$(mktemp -d ./tmp.XXXXXXXX)
 tools/devtool -y test --performance -- -s -m nonci "$TEST" \
     --json-report-file=../"$local_out_dir"/report.json
+# Also this only works with rootful Docker, so these files are owned by root,
+# fix that.
+sudo chown -R "$USER" "$local_out_dir"
 mv "$local_out_dir"/* "$OUT_DIR"
