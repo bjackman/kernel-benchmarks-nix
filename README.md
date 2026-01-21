@@ -53,13 +53,23 @@ I think the actual design I want here is:
 - A standard interface for running a single-node benchmark locally. It has flags
   like `--iterations`, `--out-dir` and `--instrumentation`. Call this a
   `benchprog`. Later, benchprogs probably accept parameters.
+
+  See `packages/benchmarks/firecracker-perf-tests` for an example that wraps
+  some janky stuff in a janky way, but then produces something with a standard
+  interface.
 - For each benchprog, an optional NixOS module that provides the hard
   dependencies on the system for running the prog.
+- For each benchprog, some logic to parse artifacts into FALBA.
 - Some helper scripts for wrapping workloads into benchprogs.
 - A tool that takes a benchprog, plus its NixOS module if there is one, and
   produces a new benchprog that runs the original one in a NixOS VM.
+
+  As well as benchmarking VM guest performance, this tool can be used for
+  "integration testing" the benchmarks.
 - Some basic scripts for deploying NixOS configs, running benchprogs [remotely]
   and fetching their results into a FALBA DB.
+
+  `run-benchprog` runs it over SSH.
 
 How would this extend to multi-node benchmarks? No idea.
 
@@ -67,3 +77,10 @@ I think it's fine to design this with the assumption that the system is a pretty
 "proper computer" with SSH and stuff.
 
 The user will take care of building the actual host system themselves.
+
+The user will need to make sure that their SSH user can do sudo without a
+password. Or, perhaps there should be a "base" NixOS module that creates a user
+for use by KBN?
+
+At first, this can all just be janky shell scripts, the important thing is the
+interfaces between them. Later it might make sense to port some parts to Go.
