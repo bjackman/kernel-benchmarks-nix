@@ -13,8 +13,8 @@ pkgs.callPackage ../../wrap-benchmark.nix {
   inherit name;
   rawBenchmark = pkgs.writeShellApplication {
     inherit name;
-    runtimeInputs = [ pkgs.rsync ];
+    runtimeInputs = with pkgs; [ git ];
     text = builtins.readFile ./firecracker-perf-tests.sh;
-    runtimeEnv.FIRECRACKER_SRC = inputs.firecracker;
+    runtimeEnv.FIRECRACKER_REV = inputs.firecracker.rev;
   };
 }
