@@ -18,18 +18,20 @@
       pkgs = import nixpkgs { inherit system; };
     in
     {
-      packages."${system}" = rec {
-        benchmarks.firecracker-perf-tests = pkgs.callPackage ./packages/benchmarks/firecracker-perf-tests {
-          inherit inputs;
-        };
+      packages.${system} = rec {
+        run-benchprog = pkgs.callPackage ./packages/run-benchprog {};
+      };
+
+      benchmarks.${system}.firecracker-perf-tests = pkgs.callPackage ./packages/benchmarks/firecracker-perf-tests {
+        inherit inputs;
       };
 
       nixosModules.benchmarks.firecracker-perf-tests = import ./packages/benchmarks/firecracker-perf-tests/module.nix;
 
-      formatter."${system}" = pkgs.nixfmt-tree;
+      formatter.${system} = pkgs.nixfmt-tree;
 
       # This devShell provides a bunch of tools for running these benchmarks.
-      devShells."${system}".default = pkgs.mkShell {
+      devShells.${system}.default = pkgs.mkShell {
         packages = [
           pkgs.nixos-rebuild
         ];
