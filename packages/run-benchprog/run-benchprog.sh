@@ -70,4 +70,4 @@ executable_path="$package_path/bin/$executable_name"
 
 remote_tmpdir=$(ssh "$SSH_TARGET" mktemp -d)
 ssh "$SSH_TARGET" "$executable_path" --out-dir "$remote_tmpdir"
-rsync -avz "$SSH_TARGET:$remote_tmpdir" "$OUT_DIR"
+rsync -avz "$SSH_TARGET:$remote_tmpdir/*" "$OUT_DIR"
