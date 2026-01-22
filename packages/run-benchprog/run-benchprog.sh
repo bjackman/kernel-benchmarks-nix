@@ -2,10 +2,9 @@
 # Stupid args boilerplate
 #
 
-OUT_DIR=
+FALBA_DB=
 
-PARSED_ARGUMENTS=$(getopt -o o: --long out-dir: -- "$@")
-
+PARSED_ARGUMENTS=$(getopt -o d: --long falba-db: -- "$@")
 # shellcheck disable=SC2181
 if [ $? -ne 0 ]; then
     echo "Error: Failed to parse arguments." >&2
@@ -15,8 +14,8 @@ fi
 eval set -- "$PARSED_ARGUMENTS"
 while true; do
     case "$1" in
-        -o|--out-dir)
-            OUT_DIR="$2"
+        -d|--falba-db)
+            FALBA_DB="$2"
             shift 2
             ;;
         -h|--help)
@@ -34,8 +33,8 @@ while true; do
     esac
 done
 
-if [ "$OUT_DIR" == "" ] || [ ! -d "$OUT_DIR" ] || [ ! -z "$(ls -A "$OUT_DIR")" ]; then
-    echo "--out-dir must point to an empty directory."
+if [ "$FALBA_DB" == "" ] || [ ! -d "$FALBA_DB" ]; then
+    echo "--out-dir must point to an existing Falba database."
     exit 1
 fi
 
@@ -52,16 +51,7 @@ BENCHPROG="$2"
 # End stupid args boilerplate
 #
 
-set -x
-
-id
-echo "USER: $USER"
-echo "HOME: $HOME"
-
-which nix
-export NIX_REMOTE=daemon
 nix copy --to ssh-ng://"$SSH_TARGET" "$BENCHPROG"
-echo ok
 
 # Figure out the command to run
 package_path=$(nix eval --raw "$BENCHPROG")
@@ -70,4 +60,7 @@ executable_path="$package_path/bin/$executable_name"
 
 remote_tmpdir=$(ssh "$SSH_TARGET" mktemp -d)
 ssh "$SSH_TARGET" "$executable_path" --out-dir "$remote_tmpdir"
-rsync -avz "$SSH_TARGET:$remote_tmpdir/*" "$OUT_DIR"
+local_tmpdir="${TMPDIR:-/tmp}/$(dirname "$remote_tmpdir")"
+rsync -avz "$SSH_TARGET:$remote_tmpdir" "$local_tmpdir"
+
+falba import --test-name "$executable_name" --result-db "$FALBA_DB" "$local_tmpdir"
