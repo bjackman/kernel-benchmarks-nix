@@ -9,11 +9,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1768402209,
-        "narHash": "sha256-1RuNIfdl4pcJuEC0cCEdxIJCq3KJmWGN1jbusf89qiM=",
+        "lastModified": 1769167438,
+        "narHash": "sha256-hCzIawCHB2ZKkDAqELv42fshee9CiY/eoci+E5tuSP4=",
         "owner": "bjackman",
         "repo": "falba",
-        "rev": "12fdbc09422098f911fa7d8be646eb78c84a050e",
+        "rev": "e5337e9c1f7f7828628c83364c5a39c9e1201b81",
         "type": "github"
       },
       "original": {
@@ -49,11 +49,11 @@
     "firecracker": {
       "flake": false,
       "locked": {
-        "lastModified": 1768831912,
-        "narHash": "sha256-qUlkRmGP9vbuQQuHv+fpby3hcJdrYyQjIinzMXMfocM=",
+        "lastModified": 1769163913,
+        "narHash": "sha256-qBfOrNpl7b4nke2Fz2ANf1QYq8zF/BiSt/nCw2wJwoA=",
         "owner": "firecracker-microvm",
         "repo": "firecracker",
-        "rev": "4c8085a9563f8ca7e8e3caeca99bc3283472a8b1",
+        "rev": "4214e9a490de545a8d891d55a5bc4b94d57f5dad",
         "type": "github"
       },
       "original": {
