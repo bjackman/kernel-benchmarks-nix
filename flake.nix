@@ -39,7 +39,10 @@
             inherit inputs;
           };
 
-      nixosModules.benchmarks.firecracker-perf-tests = import ./packages/benchmarks/firecracker-perf-tests/module.nix;
+      nixosModules = {
+        default = import ./modules/benchmark-support.nix;
+        benchmarks.firecracker-perf-tests = import ./packages/benchmarks/firecracker-perf-tests/module.nix;
+      };
 
       formatter.${system} = pkgs.nixfmt-tree;
 
