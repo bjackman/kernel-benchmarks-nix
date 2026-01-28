@@ -49,11 +49,11 @@
     "firecracker": {
       "flake": false,
       "locked": {
-        "lastModified": 1769163913,
-        "narHash": "sha256-qBfOrNpl7b4nke2Fz2ANf1QYq8zF/BiSt/nCw2wJwoA=",
+        "lastModified": 1769531515,
+        "narHash": "sha256-c33+A3fTU04yjJqi6ene5nOsN8syl+KF6avIJWE1FvY=",
         "owner": "firecracker-microvm",
         "repo": "firecracker",
-        "rev": "4214e9a490de545a8d891d55a5bc4b94d57f5dad",
+        "rev": "d13fab4c4d8706cd3bcb5c8b8af0504feb9293d7",
         "type": "github"
       },
       "original": {
