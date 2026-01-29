@@ -39,12 +39,12 @@ while true; do
 done
 
 if [ "$FALBA_DB" == "" ] || [ ! -d "$FALBA_DB" ]; then
-    echo "--out-dir must point to an existing Falba database."
+    echo "--falba-db must point to an existing Falba database."
     exit 1
 fi
 
 if [ $# -ne 2 ]; then
-    echo "Usage: $1 [opts] SSH_TARGET BENCHPROG"
+    echo "Usage: $0 [opts] SSH_TARGET BENCHPROG"
     exit 1
 fi
 # user@host
