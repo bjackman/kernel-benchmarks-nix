@@ -3,8 +3,9 @@
 #
 
 FALBA_DB=
+COLLECT_FILES=()
 
-PARSED_ARGUMENTS=$(getopt -o d: --long falba-db: -- "$@")
+PARSED_ARGUMENTS=$(getopt -o d:c: --long falba-db:,collect: -- "$@")
 # shellcheck disable=SC2181
 if [ $? -ne 0 ]; then
     echo "Error: Failed to parse arguments." >&2
@@ -16,6 +17,10 @@ while true; do
     case "$1" in
         -d|--falba-db)
             FALBA_DB="$2"
+            shift 2
+            ;;
+        -c|--collect)
+            COLLECT_FILES+=("$2")
             shift 2
             ;;
         -h|--help)
@@ -59,12 +64,16 @@ nixos_version_json="$host_info_dir"/nixos-version.json
 ssh "$SSH_TARGET" "nixos-version --json" > "$nixos_version_json"
 ssh "$SSH_TARGET" "readlink /run/current-system" > "$host_info_dir"/nixos_current_system
 ssh "$SSH_TARGET" "readlink /run/booted-system" > "$host_info_dir"/nixos_booted_system
-nixos_current_system="$host_info_dir"/nixos_current_system
 
 if ! cmp "$host_info_dir"/nixos_current_system "$host_info_dir"/nixos_booted_system; then
     echo "current-system and booted-system differ. Cowardly refusing to continue, try rebooting target."
     exit 1
 fi
+
+# Collect additional requested files
+for remote_file in "${COLLECT_FILES[@]}"; do
+    scp "$SSH_TARGET:$remote_file" "$host_info_dir/" || echo "Warning: Failed to collect $remote_file" >&2
+done
 
 # Figure out the command to run
 package_path=$(nix eval --raw "$BENCHPROG")
@@ -77,4 +86,4 @@ ssh "$SSH_TARGET" "$executable_path" --out-dir "$remote_tmpdir"
 local_tmpdir="${TMPDIR:-/tmp}/$(dirname "$remote_tmpdir")"
 rsync -avz "$SSH_TARGET:$remote_tmpdir" "$local_tmpdir"
 
-falba import --test-name "$executable_name" --result-db "$FALBA_DB" "$local_tmpdir" "$nixos_version_json" "$nixos_current_system"
+falba import --test-name "$executable_name" --result-db "$FALBA_DB" "$local_tmpdir" "$host_info_dir"/**
