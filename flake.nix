@@ -34,6 +34,7 @@
       packages.${system} = rec {
         run-benchprog = pkgs.callPackage ./packages/run-benchprog { };
       };
+      # TODO: Expose generated falba parser configuration.
 
       benchmarks.${system} =
         # Pretty sure this is dumb and there's a neater way to do this.
