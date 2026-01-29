@@ -48,7 +48,10 @@
 
       # This devShell provides a bunch of tools for running these benchmarks.
       devShells.${system}.default = pkgs.mkShell {
-        packages = with pkgs; [ nixos-rebuild falba ];
+        packages = with pkgs; [
+          nixos-rebuild
+          falba
+        ];
       };
     };
 }
