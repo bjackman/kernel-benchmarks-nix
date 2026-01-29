@@ -40,7 +40,7 @@
           };
 
       nixosModules = {
-        default = import ./modules/benchmark-support.nix;
+        default = import ./modules/benchprog-support.nix;
         benchmarks.firecracker-perf-tests = import ./packages/benchmarks/firecracker-perf-tests/module.nix;
       };
 
