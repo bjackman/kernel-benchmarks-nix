@@ -35,15 +35,20 @@
         run-benchprog = pkgs.callPackage ./packages/run-benchprog { };
       };
 
-      benchmarks.${system}.firecracker-perf-tests =
-        pkgs.callPackage ./packages/benchmarks/firecracker-perf-tests
-          {
-            inherit inputs;
-          };
+      benchmarks.${system} =
+        # Pretty sure this is dumb and there's a neater way to do this.
+        let
+          makeBenchprog = package: pkgs.callPackage package { inherit inputs; };
+        in
+        {
+          firecracker-perf-tests = makeBenchprog ./packages/benchmarks/firecracker-perf-tests;
+          hello-world = makeBenchprog ./packages/benchmarks/hello-world.nix;
+        };
 
       nixosModules = {
         default = import ./modules/benchprog-support.nix;
         benchmarks.firecracker-perf-tests = import ./packages/benchmarks/firecracker-perf-tests/module.nix;
+        # TODO: need a way to report whether a benchprog has an associated module.
       };
 
       formatter.${system} = pkgs.nixfmt-tree;
