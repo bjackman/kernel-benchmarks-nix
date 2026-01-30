@@ -2,10 +2,7 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=25.11";
     firecracker = {
-      # HACK: Pin firecracker. Once I've figured out the pacakging for KBN this
-      # should be doable in the user instead of in KBN itself.
-      # This has a to-be-merged memfd bugfix from Nikita.
-      url = "github:kalyazin/firecracker?rev=94de4c07531b417812b044ccf8692d7704522414";
+      url = "github:firecracker-microvm/firecracker?ref=feature/secret-hiding";
       flake = false;
     };
     falba = {
