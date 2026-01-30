@@ -83,7 +83,7 @@ executable_path="$package_path/bin/$executable_name"
 # Run the benchprog
 remote_tmpdir=$(ssh "$SSH_TARGET" mktemp -d)
 ssh "$SSH_TARGET" "$executable_path" --out-dir "$remote_tmpdir"
-local_tmpdir="${TMPDIR:-/tmp}/$(dirname "$remote_tmpdir")"
+local_tmpdir="${TMPDIR:-/tmp}/$(basename "$remote_tmpdir")"
 rsync -avz "$SSH_TARGET:$remote_tmpdir" "$local_tmpdir"
 
 falba import --test-name "$executable_name" --result-db "$FALBA_DB" "$local_tmpdir" "$host_info_dir"/**
