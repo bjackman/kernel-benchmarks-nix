@@ -57,9 +57,17 @@ I think the actual design I want here is:
   See `packages/benchmarks/firecracker-perf-tests` for an example that wraps
   some janky stuff in a janky way, but then produces something with a standard
   interface.
+
+  TODO: This needs to be split up into phases, probably just "setup" and "run"
+  initially.
 - For each benchprog, an optional NixOS module that provides the hard
   dependencies on the system for running the prog.
+
+  TODO: Need a way to register these and expose them conveniently to the user.
+  Also a way to check if the user has forgotten to import the relevant module.
 - For each benchprog, some logic to parse artifacts into FALBA.
+
+  TODO: Also need a way to register and expose these.
 - Some helper scripts for wrapping workloads into benchprogs.
 - A tool that takes a benchprog, plus its NixOS module if there is one, and
   produces a new benchprog that runs the original one in a NixOS VM.
@@ -70,6 +78,8 @@ I think the actual design I want here is:
   and fetching their results into a FALBA DB.
 
   `run-benchprog` runs it over SSH.
+
+TODO: Rewrite this stuff in a proper programming language.
 
 How would this extend to multi-node benchmarks? No idea.
 
