@@ -79,8 +79,6 @@ I think the actual design I want here is:
 
   `run-benchprog` runs it over SSH.
 
-TODO: Rewrite this stuff in a proper programming language.
-
 How would this extend to multi-node benchmarks? No idea.
 
 I think it's fine to design this with the assumption that the system is a pretty
@@ -94,3 +92,16 @@ for use by KBN?
 
 At first, this can all just be janky shell scripts, the important thing is the
 interfaces between them. Later it might make sense to port some parts to Go.
+
+TODOS: (Many of these are duplicated as comments elsewhere):
+
+- Figure out how to expose the relevant derivations to a user's devShell
+- Figure out how to expose the Falba parser stuff
+- Figure out how to expose the instrumentation stuff
+- Split up benchmark running into phases
+- Start porting some bits to a proper programming language?
+- Figure out how to do instrumentation processing offline with a better API in
+  Falba. At the moment it's being done on the target host which is dumb.
+- Add the other missing elements from the elements listed above
+- Clean up naming a bit.
+- Figure out how to paramaterise benchprogs
