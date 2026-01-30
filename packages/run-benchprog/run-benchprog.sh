@@ -1,17 +1,23 @@
+#!/bin/bash
+
+set -eu -o pipefail
+
 #
 # Stupid args boilerplate
 #
 
 FALBA_DB=
 COLLECT_FILES=()
+INSTRUMENT_VMSTAT=false
 
-PARSED_ARGUMENTS=$(getopt -o d:c: --long falba-db:,collect: -- "$@")
+PARSED_ARGUMENTS=$(getopt -o d:c: --long falba-db:,collect:,instruments: -- "$@")
 # shellcheck disable=SC2181
 if [ $? -ne 0 ]; then
     echo "Error: Failed to parse arguments." >&2
     usage
     exit 1
 fi
+
 eval set -- "$PARSED_ARGUMENTS"
 while true; do
     case "$1" in
@@ -21,6 +27,16 @@ while true; do
             ;;
         -c|--collect)
             COLLECT_FILES+=("$2")
+            shift 2
+            ;;
+        --instruments)
+            # TODO: make this generic isntead of hardcoding vmstat here.
+            if [ "$2" == "vmstat" ]; then
+                INSTRUMENT_VMSTAT=true
+            else
+                echo "Error: Unsupported instrument '$2'. Only 'vmstat' is supported." >&2
+                exit 1
+            fi
             shift 2
             ;;
         -h|--help)
@@ -47,9 +63,8 @@ if [ $# -ne 2 ]; then
     echo "Usage: $0 [opts] SSH_TARGET BENCHPROG"
     exit 1
 fi
-# user@host
+
 SSH_TARGET="$1"
-# Nix flake reference
 BENCHPROG="$2"
 
 #
@@ -57,6 +72,10 @@ BENCHPROG="$2"
 #
 
 nix copy --to ssh-ng://"$SSH_TARGET" "$BENCHPROG"
+# TODO how should we implement installing instruments?
+if [ "$INSTRUMENT_VMSTAT" = true ]; then
+    nix copy --to ssh-ng://"$SSH_TARGET" "$(which instrument-vmstat)"
+fi
 
 # Fetch generic target data
 host_info_dir="$(mktemp -d)"
@@ -80,10 +99,30 @@ package_path=$(nix eval --raw "$BENCHPROG")
 executable_name=$(nix eval --raw "$BENCHPROG.meta.mainProgram")
 executable_path="$package_path/bin/$executable_name"
 
-# Run the benchprog
+# Setup Remote Directories
 remote_tmpdir=$(ssh "$SSH_TARGET" mktemp -d)
-ssh "$SSH_TARGET" "$executable_path" --out-dir "$remote_tmpdir"
-local_tmpdir="${TMPDIR:-/tmp}/$(basename "$remote_tmpdir")"
-rsync -avz "$SSH_TARGET:$remote_tmpdir" "$local_tmpdir"
 
+# Handle Instrumentation Setup
+if [ "$INSTRUMENT_VMSTAT" = true ]; then
+    remote_inst_dir="$(ssh "$SSH_TARGET" mktemp -d)"
+    # shellcheck disable=SC2029
+    ssh "$SSH_TARGET" "KBN_INSTRUMENT_DIR=$remote_inst_dir $(which instrument-vmstat) --before"
+fi
+
+# Run the benchprog
+ssh "$SSH_TARGET" "$executable_path" --out-dir "$remote_tmpdir"
+
+# Handle Instrumentation Teardown
+if [ "$INSTRUMENT_VMSTAT" = true ]; then
+    # shellcheck disable=SC2029
+    ssh "$SSH_TARGET" "KBN_INSTRUMENT_DIR=$remote_inst_dir $(which instrument-vmstat) --after"
+    rsync -avz "$SSH_TARGET:$remote_inst_dir/" "$host_info_dir/instrumentation/"
+fi
+
+# Fetch benchmark results
+local_tmpdir="${TMPDIR:-/tmp}/$(basename "$remote_tmpdir")"
+rsync -avz "$SSH_TARGET:$remote_tmpdir/" "$local_tmpdir/"
+
+# Import everything to Falba
+# We include the instrumentation data by passing the $host_info_dir glob
 falba import --test-name "$executable_name" --result-db "$FALBA_DB" "$local_tmpdir" "$host_info_dir"/**
