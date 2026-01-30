@@ -83,6 +83,7 @@ nixos_version_json="$host_info_dir"/nixos-version.json
 ssh "$SSH_TARGET" "nixos-version --json" > "$nixos_version_json"
 ssh "$SSH_TARGET" "readlink /run/current-system" > "$host_info_dir"/nixos_current_system
 ssh "$SSH_TARGET" "readlink /run/booted-system" > "$host_info_dir"/nixos_booted_system
+ssh "$SSH_TARGET" "cat /etc/os-release" > "$host_info_dir/os-release"
 
 if ! cmp "$host_info_dir"/nixos_current_system "$host_info_dir"/nixos_booted_system; then
     echo "current-system and booted-system differ. Cowardly refusing to continue, try rebooting target."
