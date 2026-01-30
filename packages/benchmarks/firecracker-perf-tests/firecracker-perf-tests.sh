@@ -54,7 +54,7 @@ cd "$KBN_CACHE_DIR"
 # derivation and making it writable didn't work). Haven't looked into this
 # carefully.
 if [ ! -d firecracker ]; then
-    git clone https://github.com/firecracker-microvm/firecracker.git
+    git clone https://github.com/kalyazin/firecracker.git
 fi
 cd firecracker
 git checkout "$FIRECRACKER_REV"
@@ -65,7 +65,7 @@ export AWS_EMF_NAMESPACE=local
 tools/devtool -y build
 
 # TODO: Hard coding a specific subtest here.
-TEST='./integration_tests/performance/test_snapshot.py::test_population_latency[vmlinux-5.10.245-PCI_ON-4-6144-None]'
+TEST='integration_tests/performance/test_snapshot.py::test_population_latency[vmlinux-5.10.245-PCI_OFF-SF_ON-1-1024-None]'
 
 # You configure the location of the output data by pointing --json-report-file
 # to where you want the report.json and it populates the parent directory of

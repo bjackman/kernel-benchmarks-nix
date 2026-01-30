@@ -4,7 +4,8 @@
     firecracker = {
       # HACK: Pin firecracker. Once I've figured out the pacakging for KBN this
       # should be doable in the user instead of in KBN itself.
-      url = "github:firecracker-microvm/firecracker?rev=b6c8b2bb57358e9ace56513d1ae3531976f96b3d";
+      # This has a to-be-merged memfd bugfix from Nikita.
+      url = "github:kalyazin/firecracker?rev=94de4c07531b417812b044ccf8692d7704522414";
       flake = false;
     };
     falba = {

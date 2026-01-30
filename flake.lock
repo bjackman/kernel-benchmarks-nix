@@ -49,17 +49,17 @@
     "firecracker": {
       "flake": false,
       "locked": {
-        "lastModified": 1764264231,
-        "narHash": "sha256-dXllokvw2pXRliAN2rW21ZiKhi4V1nVXczgWpHTFwFw=",
-        "owner": "firecracker-microvm",
+        "lastModified": 1769782024,
+        "narHash": "sha256-3blAwH4umYNPANT0ud4JzpWTA174N41l8O+0qnsgYc0=",
+        "owner": "kalyazin",
         "repo": "firecracker",
-        "rev": "b6c8b2bb57358e9ace56513d1ae3531976f96b3d",
+        "rev": "94de4c07531b417812b044ccf8692d7704522414",
         "type": "github"
       },
       "original": {
-        "owner": "firecracker-microvm",
+        "owner": "kalyazin",
         "repo": "firecracker",
-        "rev": "b6c8b2bb57358e9ace56513d1ae3531976f96b3d",
+        "rev": "94de4c07531b417812b044ccf8692d7704522414",
         "type": "github"
       }
     },
