@@ -32,7 +32,8 @@
     in
     {
       packages.${system} = rec {
-        run-benchprog = pkgs.callPackage ./packages/run-benchprog { };
+        instrument-vmstat = pkgs.callPackage ./packages/instruments/vmstat {};
+        run-benchprog = pkgs.callPackage ./packages/run-benchprog { inherit instrument-vmstat; };
       };
       # TODO: Expose generated falba parser configuration.
 
