@@ -9,8 +9,9 @@ set -eu -o pipefail
 FALBA_DB=
 COLLECT_FILES=()
 INSTRUMENT_VMSTAT=false
+SSH_PORT=22
 
-PARSED_ARGUMENTS=$(getopt -o d:c: --long falba-db:,collect:,instruments: -- "$@")
+PARSED_ARGUMENTS=$(getopt -o d:c: --long falba-db:,collect:,instruments,ssh-port: -- "$@")
 # shellcheck disable=SC2181
 if [ $? -ne 0 ]; then
     echo "Error: Failed to parse arguments." >&2
@@ -37,6 +38,11 @@ while true; do
                 echo "Error: Unsupported instrument '$2'. Only 'vmstat' is supported." >&2
                 exit 1
             fi
+            shift 2
+            ;;
+        # TODO: Figure out a less shitty way to configure SSH.
+        --ssh-port)
+            SSH_PORT="$2"
             shift 2
             ;;
         -h|--help)
@@ -71,6 +77,10 @@ BENCHPROG="$2"
 # End stupid args boilerplate
 #
 
+do_ssh() {
+    ssh -p "$SSH_PORT" "$SSH_TARGET" "$@"
+}
+
 nix copy --to ssh-ng://"$SSH_TARGET" "$BENCHPROG"
 # TODO how should we implement installing instruments?
 if [ "$INSTRUMENT_VMSTAT" = true ]; then
@@ -80,10 +90,10 @@ fi
 # Fetch generic target data
 host_info_dir="$(mktemp -d)"
 nixos_version_json="$host_info_dir"/nixos-version.json
-ssh "$SSH_TARGET" "nixos-version --json" > "$nixos_version_json"
-ssh "$SSH_TARGET" "readlink /run/current-system" > "$host_info_dir"/nixos_current_system
-ssh "$SSH_TARGET" "readlink /run/booted-system" > "$host_info_dir"/nixos_booted_system
-ssh "$SSH_TARGET" "cat /etc/os-release" > "$host_info_dir/os-release"
+do_ssh "nixos-version --json" > "$nixos_version_json"
+do_ssh "readlink /run/current-system" > "$host_info_dir"/nixos_current_system
+do_ssh "readlink /run/booted-system" > "$host_info_dir"/nixos_booted_system
+do_ssh "cat /etc/os-release" > "$host_info_dir/os-release"
 
 if ! cmp "$host_info_dir"/nixos_current_system "$host_info_dir"/nixos_booted_system; then
     echo "current-system and booted-system differ. Cowardly refusing to continue, try rebooting target."
@@ -101,22 +111,22 @@ executable_name=$(nix eval --raw "$BENCHPROG.meta.mainProgram")
 executable_path="$package_path/bin/$executable_name"
 
 # Setup Remote Directories
-remote_tmpdir=$(ssh "$SSH_TARGET" mktemp -d)
+remote_tmpdir=$(do_ssh mktemp -d)
 
 # Handle Instrumentation Setup
 if [ "$INSTRUMENT_VMSTAT" = true ]; then
-    remote_inst_dir="$(ssh "$SSH_TARGET" mktemp -d)"
+    remote_inst_dir="$(do_ssh mktemp -d)"
     # shellcheck disable=SC2029
-    ssh "$SSH_TARGET" "KBN_INSTRUMENT_DIR=$remote_inst_dir $(which instrument-vmstat) --before"
+    do_ssh "KBN_INSTRUMENT_DIR=$remote_inst_dir $(which instrument-vmstat) --before"
 fi
 
 # Run the benchprog
-ssh "$SSH_TARGET" "$executable_path" --out-dir "$remote_tmpdir"
+do_ssh "$executable_path" --out-dir "$remote_tmpdir"
 
 # Handle Instrumentation Teardown
 if [ "$INSTRUMENT_VMSTAT" = true ]; then
     # shellcheck disable=SC2029
-    ssh "$SSH_TARGET" "KBN_INSTRUMENT_DIR=$remote_inst_dir $(which instrument-vmstat) --after"
+    do_ssh "KBN_INSTRUMENT_DIR=$remote_inst_dir $(which instrument-vmstat) --after"
     rsync -avz "$SSH_TARGET:$remote_inst_dir/" "$host_info_dir/instrumentation/"
 fi
 
