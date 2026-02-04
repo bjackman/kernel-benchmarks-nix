@@ -11,7 +11,7 @@ COLLECT_FILES=()
 INSTRUMENT_VMSTAT=false
 SSH_PORT=22
 
-PARSED_ARGUMENTS=$(getopt -o d:c: --long falba-db:,collect:,instruments,ssh-port: -- "$@")
+PARSED_ARGUMENTS=$(getopt -o d:c: --long falba-db:,collect:,instruments:,ssh-port: -- "$@")
 # shellcheck disable=SC2181
 if [ $? -ne 0 ]; then
     echo "Error: Failed to parse arguments." >&2
