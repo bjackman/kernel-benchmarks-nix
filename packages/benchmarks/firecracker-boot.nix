@@ -1,18 +1,16 @@
 # Boots up a NixOS VM in Firecracker then shuts down again.
 {
   pkgs,
-  pkgsUnstable,
   # This is the library function provided by the nixpkgs flake. It needs to be
   # passed in as a package arg. This is probably stupid, there is probably a way
   # to generate the configuration directly from something availble in pkgs.
   nixosSystem,
-  # This is the flake input.
-  microvm,
+  inputs,
   ...
 }:
 let
   baseModules = [
-    microvm.nixosModules.microvm
+    inputs.microvm.nixosModules.microvm
     "${pkgs.path}/nixos/modules/profiles/minimal.nix"
     {
       networking.hostName = "my-microvm";
@@ -59,14 +57,15 @@ let
     {
       nixpkgs.overlays = [
         (final: prev: {
-          # Use pkgsUnstable to get new Rust toolchain required by Patrick's code.
-          firecracker = pkgsUnstable.callPackage ../firecracker.nix { };
+          firecracker = pkgs.callPackage ../firecracker.nix {
+            src = inputs.firecracker;
+          };
         })
       ];
     }
   ];
   secretFreeModule = {
-    extraConfig.machine-config.secret_free = true;
+    microvm.firecracker.extraConfig.machine-config.secret_free = true;
   };
   baseConfig = nixosSystem {
     system = "x86_64-linux";
