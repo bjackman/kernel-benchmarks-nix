@@ -9,6 +9,10 @@
       url = "github:bjackman/falba";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    microvm = {
+      url = "github:microvm-nix/microvm.nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -38,10 +42,14 @@
       benchmarks.${system} =
         # Pretty sure this is dumb and there's a neater way to do this.
         let
-          makeBenchprog = package: pkgs.callPackage package { inherit inputs; };
+          makeBenchprog = package: pkgs.callPackage package {
+            inherit inputs;
+            inherit (nixpkgs.lib) nixosSystem;
+          };
         in
         {
           firecracker-perf-tests = makeBenchprog ./packages/benchmarks/firecracker-perf-tests;
+          firecracker-boot = makeBenchprog ./packages/benchmarks/firecracker-boot.nix;
           hello-world = makeBenchprog ./packages/benchmarks/hello-world.nix;
         };
 
