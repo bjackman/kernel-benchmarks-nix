@@ -10,8 +10,9 @@ FALBA_DB=
 COLLECT_FILES=()
 INSTRUMENT_VMSTAT=false
 SSH_PORT=22
+DO_NIX_COPY=true
 
-PARSED_ARGUMENTS=$(getopt -o d:c: --long falba-db:,collect:,instruments:,ssh-port: -- "$@")
+PARSED_ARGUMENTS=$(getopt -o d:c: --long falba-db:,collect:,instruments:,ssh-port:,no-copy -- "$@")
 # shellcheck disable=SC2181
 if [ $? -ne 0 ]; then
     echo "Error: Failed to parse arguments." >&2
@@ -44,6 +45,10 @@ while true; do
         --ssh-port)
             SSH_PORT="$2"
             shift 2
+            ;;
+        --no-copy)
+            DO_NIX_COPY=false
+            shift
             ;;
         -h|--help)
             usage
@@ -78,13 +83,22 @@ BENCHPROG="$2"
 #
 
 do_ssh() {
-    ssh -p "$SSH_PORT" "$SSH_TARGET" "$@"
+    local port_args
+    if [ -n "$SSH_PORT" ]; then
+        port_args="-p $SSH_PORT"
+    else
+        port_args=
+    fi
+    # shellcheck disable=SC2086,SC2029
+    ssh $port_args "$SSH_TARGET" "$@"
 }
 
-nix copy --to ssh-ng://"$SSH_TARGET" "$BENCHPROG"
-# TODO how should we implement installing instruments?
-if [ "$INSTRUMENT_VMSTAT" = true ]; then
-    nix copy --to ssh-ng://"$SSH_TARGET" "$(which instrument-vmstat)"
+if "$DO_NIX_COPY"; then
+    nix copy --to ssh-ng://"$SSH_TARGET" "$BENCHPROG"
+    # TODO how should we implement installing instruments?
+    if [ "$INSTRUMENT_VMSTAT" = true ]; then
+        nix copy --to ssh-ng://"$SSH_TARGET" "$(which instrument-vmstat)"
+    fi
 fi
 
 # Fetch generic target data
