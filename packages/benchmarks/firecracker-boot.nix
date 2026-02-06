@@ -23,7 +23,6 @@ let
           driveIoEngine = "Sync";
           # Support booting on super minimal kernel configs
           extraArgs = [ "--no-seccomp" ];
-          extraConfig.machine-config.gdb_socket_path = "/tmp/fc_gdb.sock";
         };
       };
       # Immediately reboot on startup. In Firecracker, rebooting actually

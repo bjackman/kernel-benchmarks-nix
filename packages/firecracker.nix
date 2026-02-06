@@ -55,14 +55,12 @@ rustPlatform.buildRustPackage rec {
     rustPlatform.bindgenHook
   ];
 
-  cargoBuildFlags = [ "--package" "firecracker" "--features" "gdb" ];
+  cargoBuildFlags = [ "--workspace" ];
   cargoTestFlags = [
     "--package"
     "firecracker"
     "--package"
     "jailer"
-    "--features"
-    "gdb"
   ];
 
   checkFlags = [
