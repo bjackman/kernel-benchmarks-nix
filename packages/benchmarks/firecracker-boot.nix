@@ -45,6 +45,10 @@ let
       # boot.kernelParams = [ "systemd.log_level=err" ];
       # Attempt to avoid unnecesary stuff
       nix.enable = false;
+      boot.kernelParams = [
+        "nokaslr"
+        "earlyprintk=serial"
+      ];
     }
 
     # This is a bit weird - we're in the definition of the guest, but this is
