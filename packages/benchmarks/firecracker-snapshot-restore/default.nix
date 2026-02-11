@@ -7,11 +7,13 @@
   # passed in as a package arg. This is probably stupid, there is probably a way
   # to generate the configuration directly from something availble in pkgs.
   nixosSystem,
-  firecracker,
   inputs,
   ...
 }:
 let
+  firecracker = pkgs.callPackage ../../firecracker.nix {
+    src = inputs.firecracker;
+  };
   baseModules = [
     inputs.microvm.nixosModules.microvm
     {
@@ -30,9 +32,26 @@ let
     modules = baseModules;
   };
   microvmRunner = config.config.microvm.declaredRunner;
+  # Not actually a script just a "library" to be sourced.
+  shLib = pkgs.writeShellScriptBin "lib.sh" (builtins.readFile ./lib.sh);
+  # This script generates a snapshot file (mem) and vmstate file in the CWD.
+  gen-snapshot = pkgs.writeShellApplication {
+    name = "firecracker-gen-snapshot";
+    runtimeInputs = [ pkgs.curl microvmRunner shLib ];
+    extraShellCheckFlags = [
+      "--external-sources"
+      "--source-path=${shLib}/bin"
+    ];
+    text = builtins.readFile ./gen-snapshot.sh;
+  };
 in
 pkgs.writeShellApplication {
   name = "firecracker-snapshot-restore";
-  runtimeInputs = [ pkgs.curl microvmRunner ];
-  text = builtins.readFile ./firecracker-snapshot-restore.sh;
+  runtimeInputs = [ pkgs.curl firecracker shLib gen-snapshot ];
+  text = builtins.readFile ./snapshot-restore.sh;
+  extraShellCheckFlags = [
+    "--external-sources"
+    "--source-path=${shLib}/bin"
+  ];
+  passthru = { inherit gen-snapshot shLib; };
 }
