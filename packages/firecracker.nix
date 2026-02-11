@@ -55,7 +55,12 @@ rustPlatform.buildRustPackage rec {
     rustPlatform.bindgenHook
   ];
 
-  cargoBuildFlags = [ "--workspace" ];
+  cargoBuildFlags = [
+    "--workspace"
+    "--bins"
+    "--example"
+    "uffd_fault_all_handler"
+  ];
   cargoTestFlags = [
     "--package"
     "firecracker"
@@ -89,6 +94,8 @@ rustPlatform.buildRustPackage rec {
     for bin in $(find $releaseDir -maxdepth 1 -type f -executable); do
       install -Dm555 -t $out/bin $bin
     done
+
+    install -Dm555 "$releaseDir/examples/uffd_fault_all_handler" "$out/bin/uffd_fault_all_handler"
 
     runHook postInstall
   '';
