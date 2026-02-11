@@ -19,7 +19,12 @@ let
     {
       microvm = {
         hypervisor = "firecracker";
-        firecracker. extraArgs = [ "--no-seccomp" ];
+        firecracker = {
+          # Required for GEST_MEMFD_FLAG_NO_DIRECT_MAP
+          driveIoEngine = "Sync";
+          extraArgs = [ "--no-seccomp" ];
+          extraConfig.machine-config.secret_free = true;
+        };
       };
       # This is a bit weird (we are in a module that defines the guest but
       # actually this configures the host) - it ensures that the microvm runner
