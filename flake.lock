@@ -49,16 +49,16 @@
     "firecracker": {
       "flake": false,
       "locked": {
-        "lastModified": 1769792184,
-        "narHash": "sha256-3blAwH4umYNPANT0ud4JzpWTA174N41l8O+0qnsgYc0=",
-        "owner": "firecracker-microvm",
+        "lastModified": 1771331808,
+        "narHash": "sha256-uOHwJRcCKi0lyfSRzszGi2XaWut+WfStg60ekICV0XU=",
+        "owner": "bjackman",
         "repo": "firecracker",
-        "rev": "5ab6949db2a6dc58971bd448d57b96f993d110c9",
+        "rev": "af93e771bb5a56afbbb69d3eae7f9b33cab8b56a",
         "type": "github"
       },
       "original": {
-        "owner": "firecracker-microvm",
-        "ref": "feature/secret-hiding",
+        "owner": "bjackman",
+        "ref": "skip-if",
         "repo": "firecracker",
         "type": "github"
       }

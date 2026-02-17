@@ -2,7 +2,8 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=25.11";
     firecracker = {
-      url = "github:firecracker-microvm/firecracker?ref=feature/secret-hiding";
+      # Based on upstream branch feature/secret-hiding. Adds a bugfix from me.
+      url = "github:bjackman/firecracker?ref=skip-if";
       flake = false;
     };
     falba = {

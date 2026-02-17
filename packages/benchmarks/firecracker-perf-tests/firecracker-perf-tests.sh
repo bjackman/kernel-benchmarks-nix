@@ -54,7 +54,7 @@ cd "$KBN_CACHE_DIR"
 # derivation and making it writable didn't work). Haven't looked into this
 # carefully.
 if [ ! -d firecracker ]; then
-    git clone https://github.com/firecracker-microvm/firecracker.git
+    git clone https://github.com/bjackman/firecracker.git
 fi
 cd firecracker
 git checkout "$FIRECRACKER_REV"
