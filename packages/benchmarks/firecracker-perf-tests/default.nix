@@ -16,6 +16,7 @@ pkgs.callPackage ../../wrap-benchmark.nix {
     runtimeInputs = with pkgs; [
       git
       getopt
+      awscli2
     ];
     text = builtins.readFile ./firecracker-perf-tests.sh;
     runtimeEnv.FIRECRACKER_REV = inputs.firecracker.rev;
