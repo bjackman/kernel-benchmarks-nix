@@ -13,7 +13,7 @@
   passthru ? { },
   # Modules that are required for the host the benchprog is running in.
   nixosModules ? [ ],
-  ...
+  requiresInternet ? false,
 }:
 let
   wrappedProg = pkgs.writeShellScriptBin "${name}-wrapped" ''
@@ -91,6 +91,8 @@ wrappedProg
                   StandardError = "tty";
                 };
                 onSuccess = [ "poweroff.target" ];
+                after = lib.optional requiresInternet "network-online.target";
+                wants = lib.optional requiresInternet "network-online.target";
               };
               boot.kernelParams = [ "systemd.unit=kbn-guest.service" ];
               # Don't bother storing logs to disk, that seems like it will just
@@ -112,6 +114,7 @@ wrappedProg
         mkdir -p "$KBN_OUTPUT_HOST"
         ${nixosRunner}/bin/run-${hostName}-vm
       '';
+      passthru = { inherit nixosConfig; };
     };
 }
 // passthru

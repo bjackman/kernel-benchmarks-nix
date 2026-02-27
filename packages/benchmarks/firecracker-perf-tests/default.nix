@@ -25,4 +25,5 @@ wrapBenchmark {
     falba-parsers = import ./falba-parsers.nix;
     falba-parsers-json = pkgs.writers.writeJSON "falba-parsers.json" falba-parsers;
   };
+  requiresInternet = true;
 }
