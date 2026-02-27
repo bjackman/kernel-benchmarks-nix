@@ -37,7 +37,7 @@
       # downside is it means things could get confusing if we build benchprogs
       # from a different pkgs than we used for wrapBenchmark? I think this is OK
       # though since it's not "exposed to users" whateve that means here.
-      wrapBenchmark = pkgs.callPackage ./lib/wrapBenchmark.nix { inherit inputs; };
+      wrapBenchmark = pkgs.callPackage ./lib/wrapBenchmark.nix { inherit self inputs; };
     in
     {
       packages.${system} = rec {

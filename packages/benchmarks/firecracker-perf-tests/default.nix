@@ -20,6 +20,7 @@ wrapBenchmark {
     text = builtins.readFile ./firecracker-perf-tests.sh;
     runtimeEnv.FIRECRACKER_REV = inputs.firecracker.rev;
   };
+  nixosModules = [ ./module.nix ];
   passthru = rec {
     falba-parsers = import ./falba-parsers.nix;
     falba-parsers-json = pkgs.writers.writeJSON "falba-parsers.json" falba-parsers;
