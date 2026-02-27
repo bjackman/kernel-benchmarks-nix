@@ -46,6 +46,5 @@ in
 pkgs.writeShellApplication {
   name = "firecracker-snapshot-restore";
   version = "0.1";
-  text = ''
-  '';
+  text = '''';
 }

@@ -42,7 +42,11 @@ let
   # This script generates a snapshot file (mem) and vmstate file in the CWD.
   gen-snapshot = pkgs.writeShellApplication {
     name = "firecracker-gen-snapshot";
-    runtimeInputs = [ pkgs.curl microvmRunner shLib ];
+    runtimeInputs = [
+      pkgs.curl
+      microvmRunner
+      shLib
+    ];
     extraShellCheckFlags = [
       "--external-sources"
       "--source-path=${shLib}/bin"
@@ -52,7 +56,12 @@ let
 in
 pkgs.writeShellApplication {
   name = "firecracker-snapshot-restore";
-  runtimeInputs = [ pkgs.curl firecracker shLib gen-snapshot ];
+  runtimeInputs = [
+    pkgs.curl
+    firecracker
+    shLib
+    gen-snapshot
+  ];
   text = builtins.readFile ./snapshot-restore.sh;
   extraShellCheckFlags = [
     "--external-sources"

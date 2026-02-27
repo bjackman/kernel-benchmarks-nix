@@ -17,4 +17,3 @@ pkgs.callPackage ../wrap-benchmark.nix {
     text = "echo hello world";
   };
 }
-

@@ -35,7 +35,7 @@
     in
     {
       packages.${system} = rec {
-        instrument-vmstat = pkgs.callPackage ./packages/instruments/vmstat {};
+        instrument-vmstat = pkgs.callPackage ./packages/instruments/vmstat { };
         run-benchprog = pkgs.callPackage ./packages/run-benchprog { inherit instrument-vmstat; };
       };
       # TODO: Expose generated falba parser configuration.
@@ -43,10 +43,12 @@
       benchmarks.${system} =
         # Pretty sure this is dumb and there's a neater way to do this.
         let
-          makeBenchprog = package: pkgs.callPackage package {
-            inherit inputs;
-            inherit (nixpkgs.lib) nixosSystem;
-          };
+          makeBenchprog =
+            package:
+            pkgs.callPackage package {
+              inherit inputs;
+              inherit (nixpkgs.lib) nixosSystem;
+            };
         in
         {
           firecracker-perf-tests = makeBenchprog ./packages/benchmarks/firecracker-perf-tests;
