@@ -105,3 +105,4 @@ TODOS: (Many of these are duplicated as comments elsewhere):
 - Add the other missing elements from the elements listed above
 - Clean up naming a bit.
 - Figure out how to paramaterise benchprogs
+- Add a flake template
