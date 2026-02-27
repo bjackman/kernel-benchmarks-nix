@@ -1,10 +1,12 @@
 {
   pkgs,
+  lib,
+  ...
+}:
+{
   name,
   rawBenchmark,
-  lib,
   passthru ? { },
-  ...
 }:
 pkgs.writeShellScriptBin "${name}-wrapped" ''
   export KBN_CACHE_DIR=''${XDG_CACHE_HOME:-"$HOME"/.cache}/kbn/${name}

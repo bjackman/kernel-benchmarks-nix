@@ -32,6 +32,12 @@
           })
         ];
       };
+      # TODO: does it make sense to use this as a function like this? It means
+      # we get to give the helper flake inputs so it can use nixosSystem. The
+      # downside is it means things could get confusing if we build benchprogs
+      # from a different pkgs than we used for wrapBenchmark? I think this is OK
+      # though since it's not "exposed to users" whateve that means here.
+      wrapBenchmark = pkgs.callPackage ./lib/wrapBenchmark.nix { inherit inputs; };
     in
     {
       packages.${system} = rec {
@@ -46,7 +52,7 @@
           makeBenchprog =
             package:
             pkgs.callPackage package {
-              inherit inputs;
+              inherit inputs wrapBenchmark;
               inherit (nixpkgs.lib) nixosSystem;
             };
         in

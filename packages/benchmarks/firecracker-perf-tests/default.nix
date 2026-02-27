@@ -2,14 +2,13 @@
   pkgs,
   lib,
   inputs,
+  wrapBenchmark,
   ...
 }:
 let
   name = "firecracker-perf-tests";
 in
-# TODO: Not sure if callPackage is appropriate here of if wrap-benchmark should
-# be a function passed into the package.
-pkgs.callPackage ../../wrap-benchmark.nix {
+wrapBenchmark {
   inherit name;
   rawBenchmark = pkgs.writeShellApplication {
     inherit name;
