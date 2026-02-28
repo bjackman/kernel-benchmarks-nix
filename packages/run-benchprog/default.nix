@@ -23,8 +23,8 @@ pkgs.writeShellApplication rec {
       let
         # Convert benchmarks to a JSON-friendly subset
         benchmarkPaths = lib.mapAttrs (_: benchmark: {
-          native = "${benchmark}";
-          in-vm = "${benchmark.in-vm}";
+          native = "${lib.getExe benchmark}";
+          in-vm = "${lib.getExe benchmark.in-vm}";
         }) benchmarks;
       in
       pkgs.writers.writeJSON "benchmarks.json" benchmarkPaths;
