@@ -8,7 +8,7 @@ set -eu -o pipefail
 
 FALBA_DB=.falba
 COLLECT_FILES=()
-INSTRUMENT_VMSTAT=false
+INSTRUMENTS=()
 SSH_PORT=22
 DO_NIX_COPY=true
 RUN_IN_VM=false
@@ -28,18 +28,13 @@ while true; do
             FALBA_DB="$2"
             shift 2
             ;;
+        # TODO: This should be implemented via the instrument mechanism.
         -c|--collect)
             COLLECT_FILES+=("$2")
             shift 2
             ;;
         --instruments)
-            # TODO: make this generic isntead of hardcoding vmstat here.
-            if [ "$2" == "vmstat" ]; then
-                INSTRUMENT_VMSTAT=true
-            else
-                echo "Error: Unsupported instrument '$2'. Only 'vmstat' is supported." >&2
-                exit 1
-            fi
+            INSTRUMENTS+=("$2")
             shift 2
             ;;
         # TODO: Figure out a less shitty way to configure SSH.
@@ -111,8 +106,8 @@ if [[ "$benchmark_json" != "null" ]]; then
     else
         jq='.native'
     fi
-    executable_path="$(echo "$benchmark_json" | jq --exit-status --raw-output "$jq")"
-    executable_name="$BENCHPROG"
+    bench_executable="$(echo "$benchmark_json" | jq -er "$jq")"
+    bench_name="$BENCHPROG"
 else
     echo "Assuming $BENCHPROG is a flakeref"
     if "$RUN_IN_VM"; then
@@ -121,20 +116,25 @@ else
         echo "able to append .in-vm to the flakeref to run it in a VM."
         exit 1
     fi
-    executable_name=$(nix eval --raw "$BENCHPROG.meta.mainProgram")
+    bench_name=$(nix eval --raw "$BENCHPROG.meta.mainProgram")
 fi
 
-set -x
+to_install=("$bench_executable")
+instr_executables=()
+for instr in "${INSTRUMENTS[@]}"; do
+    executable=$(jq -er ".[\"$instr\"]" < "$INSTRUMENT_REGISTRY_JSON")
+    instr_executables+=("$executable")
+    to_install+=("$executable")
+done
 
 if "$DO_NIX_COPY"; then
-    nix copy --to ssh-ng://"$SSH_TARGET" "$executable_path"
-    # TODO how should we implement installing instruments?
-    if [ "$INSTRUMENT_VMSTAT" = true ]; then
-        nix copy --to ssh-ng://"$SSH_TARGET" "$(which instrument-vmstat)"
-    fi
+    for pkg in "${to_install[@]}"; do
+        nix copy --to ssh-ng://"$SSH_TARGET" "$pkg"
+    done
 fi
 
 # Fetch generic target data
+# TODO: Immplement this as an instrument.
 host_info_dir="$(mktemp -d)"
 nixos_version_json="$host_info_dir"/nixos-version.json
 do_ssh "nixos-version --json" > "$nixos_version_json"
@@ -156,21 +156,21 @@ done
 remote_tmpdir=$(do_ssh mktemp -d)
 
 # Handle Instrumentation Setup
-if [ "$INSTRUMENT_VMSTAT" = true ]; then
-    remote_inst_dir="$(do_ssh mktemp -d)"
-    # shellcheck disable=SC2029
-    do_ssh "KBN_INSTRUMENT_DIR=$remote_inst_dir $(which instrument-vmstat) --before"
-fi
+remote_instr_dir="$(do_ssh mktemp -d)"
+for executable in "${instr_executables[@]}"; do
+    subdir="$remote_instr_dir/$(basename "$executable")"
+    do_ssh "mkdir $subdir"
+    do_ssh "KBN_INSTRUMENT_DIR=$subdir $executable --before"
+done
 
 # Run the benchprog
-do_ssh "$executable_path" --out-dir "$remote_tmpdir"
+do_ssh "$bench_executable" --out-dir "$remote_tmpdir"
 
 # Handle Instrumentation Teardown
-if [ "$INSTRUMENT_VMSTAT" = true ]; then
-    # shellcheck disable=SC2029
-    do_ssh "KBN_INSTRUMENT_DIR=$remote_inst_dir $(which instrument-vmstat) --after"
-    rsync -avz "$SSH_TARGET:$remote_inst_dir/" "$host_info_dir/instrumentation/"
-fi
+for executable in "${instr_executables[@]}"; do
+    do_ssh "KBN_INSTRUMENT_DIR=$subdir $executable --after"
+done
+rsync -avz "$SSH_TARGET:$remote_instr_dir/" "$host_info_dir/instrumentation/"
 
 # Fetch benchmark results
 local_tmpdir="${TMPDIR:-/tmp}/$(basename "$remote_tmpdir")"
@@ -178,4 +178,4 @@ rsync -avz "$SSH_TARGET:$remote_tmpdir/" "$local_tmpdir/"
 
 # Import everything to Falba
 # We include the instrumentation data by passing the $host_info_dir glob
-falba import --test-name "$executable_name" --result-db "$FALBA_DB" "$local_tmpdir" "$host_info_dir"/**
+falba import --test-name "$bench_name" --result-db "$FALBA_DB" "$local_tmpdir" "$host_info_dir"/**

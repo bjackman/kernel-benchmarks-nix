@@ -1,4 +1,4 @@
-{ pkgs, lib, instrument-vmstat, benchmarks, ... }:
+{ pkgs, lib, instruments, benchmarks, ... }:
 pkgs.writeShellApplication rec {
   name = "run-benchprog";
   # Note we don't include SSH or Nix in the dependencies here. In Google corp
@@ -8,8 +8,6 @@ pkgs.writeShellApplication rec {
     getopt
     rsync
     falba
-    # TODO: this is dumb it shouldn't be a dependency of this binary.
-    instrument-vmstat
   ];
 
   runtimeEnv = {
@@ -21,12 +19,18 @@ pkgs.writeShellApplication rec {
           in-vm = "${lib.getExe benchmark.in-vm}";
         }) benchmarks;
       in
-      pkgs.writers.writeJSON "benchmarks.json" benchmarkPaths;
+      pkgs.writers.writeJSON "instruments.json" benchmarkPaths;
+    INSTRUMENT_REGISTRY_JSON = 
+      let
+        instrumentPaths = lib.mapAttrs (_: instrument: lib.getExe instrument) instruments;
+      in
+      pkgs.writers.writeJSON "instruments.json" instrumentPaths;
   };
     
   text = builtins.readFile ./run-benchprog.sh;
   
   passthru = { 
     benchmarkRegistry = runtimeEnv.BENCHMARK_REGISTRY_JSON;
+    instrumentRegistry = runtimeEnv.INSTRUMENT_REGISTRY_JSON;
   };
 }
