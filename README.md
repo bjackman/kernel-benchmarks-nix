@@ -58,11 +58,13 @@ TODOS: (Many of these are duplicated as comments elsewhere):
 
 - NEXT: Make `nix run .#benchmarks.x86_64-linux.firecracker-perf-tests.in-vm` work.
 - Package something like the above into "tests" (nix flake check for ones that
-require no network, boring old packages for the rest).
+  require no network, boring old packages for the rest).
 
   (I can't remember why I was working on this, but somehow it should help with
   the next step).
 - Figure out how to expose the relevant derivations to a user's devShell
+  - First, support running benchmarks without needing to provide their
+    flakeref/store path.
 - Figure out how to expose the Falba parser stuff
 - Figure out how to expose the instrumentation stuff
 - Split up benchmark running into phases
