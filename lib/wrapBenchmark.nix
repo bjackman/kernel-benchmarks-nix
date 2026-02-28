@@ -16,7 +16,7 @@
   requiresInternet ? false,
 }:
 let
-  wrappedProg = pkgs.writeShellScriptBin "${name}-wrapped" ''
+  wrappedProg = pkgs.writeShellScriptBin "${name}" ''
     export KBN_CACHE_DIR=''${XDG_CACHE_HOME:-"$HOME"/.cache}/kbn/${name}
     mkdir -p "$KBN_CACHE_DIR"
     exec "${lib.getExe rawBenchmark}" "$@"
