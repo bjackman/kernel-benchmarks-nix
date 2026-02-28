@@ -94,8 +94,26 @@ do_ssh() {
     ssh $port_args "$SSH_TARGET" "$@"
 }
 
+
+# Figure out the command to run.
+# Is $BENCHPROG in the JSON registry? jq should either produce "null"
+# or a JSON object with the native and in-vm variants of the benchmark.
+benchmark_json="$(jq ".[\"$BENCHPROG\"]" < "$BENCHMARK_REGISTRY_JSON")"
+if [[ "$benchmark_json" != "null" ]]; then
+    echo "Using built-in benchmark $BENCHPROG"
+    package_path="$(echo "$benchmark_json" | jq --exit-status --raw-output ".native")"
+    executable_name="$BENCHPROG"
+else
+    echo "Assuming $BENCHPROG is a flakeref"
+    package_path=$(nix eval --raw "$BENCHPROG")
+    executable_name=$(nix eval --raw "$BENCHPROG.meta.mainProgram")
+fi
+executable_path="$package_path/bin/$executable_name"
+
+set -x
+
 if "$DO_NIX_COPY"; then
-    nix copy --to ssh-ng://"$SSH_TARGET" "$BENCHPROG"
+    nix copy --to ssh-ng://"$SSH_TARGET" "$executable_path"
     # TODO how should we implement installing instruments?
     if [ "$INSTRUMENT_VMSTAT" = true ]; then
         nix copy --to ssh-ng://"$SSH_TARGET" "$(which instrument-vmstat)"
@@ -119,11 +137,6 @@ fi
 for remote_file in "${COLLECT_FILES[@]}"; do
     scp "$SSH_TARGET:$remote_file" "$host_info_dir/" || echo "Warning: Failed to collect $remote_file" >&2
 done
-
-# Figure out the command to run
-package_path=$(nix eval --raw "$BENCHPROG")
-executable_name=$(nix eval --raw "$BENCHPROG.meta.mainProgram")
-executable_path="$package_path/bin/$executable_name"
 
 # Setup Remote Directories
 remote_tmpdir=$(do_ssh mktemp -d)
