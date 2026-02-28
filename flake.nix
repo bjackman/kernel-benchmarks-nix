@@ -73,12 +73,17 @@
 
       formatter.${system} = pkgs.nixfmt-tree;
 
-      checks.${system}= lib.mapAttrs' (name: bench: 
-        lib.nameValuePair "bench-${name}" (
-          pkgs.runCommand "check-bench-${name}" {} ''
-            ${lib.getExe bench.in-vm}
-            touch $out
-          '')) self.benchmarks.${system};
+      checks.${system} = 
+        let 
+          offlineBenchmarks = lib.filterAttrs 
+            (_: b: !b.requiresInternet) self.benchmarks.${system};
+          makeCheck = name: bench: lib.nameValuePair "bench-${name}" (
+            pkgs.runCommand "check-bench-${name}" {} ''
+              ${lib.getExe bench.in-vm}
+              touch $out
+            '');
+        in
+          lib.mapAttrs' makeCheck offlineBenchmarks;
 
       # This devShell provides a bunch of tools for running these benchmarks.
       devShells.${system}.default = pkgs.mkShell {

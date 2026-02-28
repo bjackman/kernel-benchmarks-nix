@@ -118,3 +118,4 @@ wrappedProg
     };
 }
 // passthru
+// { inherit requiresInternet; }
