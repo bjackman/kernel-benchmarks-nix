@@ -11,8 +11,9 @@ COLLECT_FILES=()
 INSTRUMENT_VMSTAT=false
 SSH_PORT=22
 DO_NIX_COPY=true
+RUN_IN_VM=false
 
-PARSED_ARGUMENTS=$(getopt -o d:c: --long falba-db:,collect:,instruments:,ssh-port:,no-copy -- "$@")
+PARSED_ARGUMENTS=$(getopt -o d:c:v --long falba-db:,collect:,instruments:,ssh-port:,no-copy,in-vm -- "$@")
 # shellcheck disable=SC2181
 if [ $? -ne 0 ]; then
     echo "Error: Failed to parse arguments." >&2
@@ -48,6 +49,10 @@ while true; do
             ;;
         --no-copy)
             DO_NIX_COPY=false
+            shift
+            ;;
+        -v|--in-vm)
+            RUN_IN_VM=true
             shift
             ;;
         -h|--help)
@@ -101,14 +106,23 @@ do_ssh() {
 benchmark_json="$(jq ".[\"$BENCHPROG\"]" < "$BENCHMARK_REGISTRY_JSON")"
 if [[ "$benchmark_json" != "null" ]]; then
     echo "Using built-in benchmark $BENCHPROG"
-    package_path="$(echo "$benchmark_json" | jq --exit-status --raw-output ".native")"
+    if "$RUN_IN_VM"; then
+        jq='.["in-vm"]'
+    else
+        jq='.native'
+    fi
+    executable_path="$(echo "$benchmark_json" | jq --exit-status --raw-output "$jq")"
     executable_name="$BENCHPROG"
 else
     echo "Assuming $BENCHPROG is a flakeref"
-    package_path=$(nix eval --raw "$BENCHPROG")
+    if "$RUN_IN_VM"; then
+        echo "--in-vm is only supported for built-in benchmarks."
+        echo "If the benchmark is built via KBN's infrastructure you may be"
+        echo "able to append .in-vm to the flakeref to run it in a VM."
+        exit 1
+    fi
     executable_name=$(nix eval --raw "$BENCHPROG.meta.mainProgram")
 fi
-executable_path="$package_path/bin/$executable_name"
 
 set -x
 
