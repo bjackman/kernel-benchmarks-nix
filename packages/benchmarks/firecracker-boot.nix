@@ -70,9 +70,12 @@ let
     modules = baseModules;
   };
 in
-{
-  config.config.microvm.declaredRunner // {
-    # Hang intermediate targets on the output so they can be built for debug inspection.
+wrapBenchmark {
+  name = "firecracker-boot";
+  # This just runs the guest which should shut itself down. The only meaningful
+  # metric is the duration.`
+  rawBenchmark = config.config.microvm.declaredRunner;
+  passthru = {
     inherit config;
   };
 }
