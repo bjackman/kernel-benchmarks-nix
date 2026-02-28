@@ -58,8 +58,8 @@
             };
         in
         {
-          firecracker-perf-tests = makeBenchprog ./packages/benchmarks/firecracker-perf-tests;
           # TODO: Re-enable when I can test them with nix flake check
+          # firecracker-perf-tests = makeBenchprog ./packages/benchmarks/firecracker-perf-tests;
           # firecracker-snapshot-restore = makeBenchprog ./packages/benchmarks/firecracker-snapshot-restore;
           # firecracker-boot = makeBenchprog ./packages/benchmarks/firecracker-boot.nix;
           hello-world = makeBenchprog ./packages/benchmarks/hello-world.nix;
