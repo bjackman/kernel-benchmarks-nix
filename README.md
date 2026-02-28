@@ -104,6 +104,10 @@ TODOS: (Many of these are duplicated as comments elsewhere):
 - Figure out how to expose the relevant derivations to a user's devShell
   - First, support running benchmarks without needing to provide their
     flakeref/store path.
+  - Eventually, should offer a way for the user to add their own
+    benchmarks/instruments when they instantiate the package.
+  - With the above done, perhaps we want to drop the ability to just pass in a
+    random binary run-benchprog.
 - Figure out how to expose the Falba parser stuff
 - Figure out how to expose the instrumentation stuff
 - Split up benchmark running into phases
@@ -114,3 +118,6 @@ TODOS: (Many of these are duplicated as comments elsewhere):
 - Clean up naming a bit.
 - Figure out how to paramaterise benchprogs
 - Add a flake template
+- Define what a "benchprog" is and what a "benchmark" is, then clean up
+  nomenclature in the codebase. I think this requires more experience with
+  actually packaging benchmarks though.
