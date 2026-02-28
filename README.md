@@ -70,6 +70,11 @@ TODOS: (Many of these are duplicated as comments elsewhere):
   - With the above done, perhaps we want to drop the ability to just pass in a
     random binary run-benchprog.
 - Figure out how to expose the Falba parser stuff
+  - One challenge here is that we want instrumentation/benchmarks to be very
+    promiscuous about what artifacts they capture, and we want them to provide as
+    much logic as possible to parse the stuff that's easy to parse. But, we don't
+    wan't to overwhelm the user's Falba DB with a bunch of metrics they don't care
+    about. So we need to give them a way to adopt subsets of the parsing logic.
 - Figure out how to expose the instrumentation stuff
 - Split up benchmark running into phases
 - Figure out how to parameterise benchmarks. This should probably include a
