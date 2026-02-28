@@ -44,8 +44,8 @@
       packages.${system} = rec {
         instrument-vmstat = pkgs.callPackage ./packages/instruments/vmstat { };
         run-benchprog = pkgs.callPackage ./packages/run-benchprog {
-          inherit instrument-vmstat;
           benchmarks = self.benchmarks.${system};
+          instruments = self.instruments.${system};
         };
 
         impure-tests =
@@ -77,6 +77,10 @@
           hello-world = makeBenchprog ./packages/benchmarks/hello-world.nix;
           stress-ng = makeBenchprog ./packages/benchmarks/stress-ng;
         };
+
+      instruments.${system} = {
+        vmstat = pkgs.callPackage ./packages/instruments/vmstat { };
+      };
 
       nixosModules = {
         default = import ./modules/benchprog-support.nix;
