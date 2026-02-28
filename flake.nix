@@ -32,6 +32,7 @@
           })
         ];
       };
+      lib = pkgs.lib;
       # TODO: does it make sense to use this as a function like this? It means
       # we get to give the helper flake inputs so it can use nixosSystem. The
       # downside is it means things could get confusing if we build benchprogs
@@ -70,6 +71,11 @@
       };
 
       formatter.${system} = pkgs.nixfmt-tree;
+
+      checks.${system}.bench-hello-world = pkgs.runCommand "check-bench-hello-world" {} ''
+        ${lib.getExe self.benchmarks.${system}.hello-world.in-vm}
+        touch $out
+      '';
 
       # This devShell provides a bunch of tools for running these benchmarks.
       devShells.${system}.default = pkgs.mkShell {
