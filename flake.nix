@@ -72,10 +72,12 @@
 
       formatter.${system} = pkgs.nixfmt-tree;
 
-      checks.${system}.bench-hello-world = pkgs.runCommand "check-bench-hello-world" {} ''
-        ${lib.getExe self.benchmarks.${system}.hello-world.in-vm}
-        touch $out
-      '';
+      checks.${system}= lib.mapAttrs' (name: bench: 
+        lib.nameValuePair "bench-${name}" (
+          pkgs.runCommand "check-bench-${name}" {} ''
+            ${lib.getExe bench.in-vm}
+            touch $out
+          '')) self.benchmarks.${system};
 
       # This devShell provides a bunch of tools for running these benchmarks.
       devShells.${system}.default = pkgs.mkShell {

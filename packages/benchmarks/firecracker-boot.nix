@@ -6,6 +6,7 @@
   # to generate the configuration directly from something availble in pkgs.
   nixosSystem,
   inputs,
+  wrapBenchmark,
   ...
 }:
 let
@@ -64,25 +65,14 @@ let
       ];
     }
   ];
-  secretFreeModule = {
-    microvm.firecracker.extraConfig.machine-config.secret_free = true;
-  };
-  baseConfig = nixosSystem {
+  config = nixosSystem {
     system = "x86_64-linux";
     modules = baseModules;
   };
-  secretFreeConfig = nixosSystem {
-    system = "x86_64-linux";
-    modules = baseModules ++ [ secretFreeModule ];
-  };
 in
 {
-  base = baseConfig.config.microvm.declaredRunner // {
+  config.config.microvm.declaredRunner // {
     # Hang intermediate targets on the output so they can be built for debug inspection.
-    inherit baseConfig;
+    inherit config;
   };
-  secret-free = secretFreeConfig.config.microvm.declaredRunner // {
-    inherit secretFreeConfig;
-  };
-
 }
