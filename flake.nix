@@ -43,7 +43,10 @@
     {
       packages.${system} = rec {
         instrument-vmstat = pkgs.callPackage ./packages/instruments/vmstat { };
-        run-benchprog = pkgs.callPackage ./packages/run-benchprog { inherit instrument-vmstat; };
+        run-benchprog = pkgs.callPackage ./packages/run-benchprog {
+          inherit instrument-vmstat;
+          benchmarks = self.benchmarks.${system};
+        };
 
         impure-tests =
           let
