@@ -6,7 +6,7 @@ set -eu -o pipefail
 # Stupid args boilerplate
 #
 
-FALBA_DB=
+FALBA_DB=.falba
 COLLECT_FILES=()
 INSTRUMENT_VMSTAT=false
 SSH_PORT=22
@@ -67,6 +67,7 @@ done
 
 if [ "$FALBA_DB" == "" ] || [ ! -d "$FALBA_DB" ]; then
     echo "--falba-db must point to an existing Falba database."
+    echo "If you intend to use $FALBA_DB, create that directory."
     exit 1
 fi
 
