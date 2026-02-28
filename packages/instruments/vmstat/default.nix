@@ -1,6 +1,6 @@
 { pkgs, ... }:
 pkgs.writeShellApplication {
-  name = "instrument-vmstat";
+  name = "vmstat";
   runtimeInputs = with pkgs; [
     coreutils
     gawk

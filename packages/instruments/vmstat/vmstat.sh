@@ -2,12 +2,9 @@
 
 set -euo pipefail
 
-VMSTAT_DIR="${KBN_INSTRUMENT_DIR}/vmstat"
-mkdir -p "$VMSTAT_DIR"
-
-BEFORE_FILE="$VMSTAT_DIR/before"
-AFTER_FILE="$VMSTAT_DIR/after"
-DIFF_FILE="$VMSTAT_DIR/diff"
+BEFORE_FILE="$KBN_INSTRUMENT_DIR/before"
+AFTER_FILE="$KBN_INSTRUMENT_DIR/after"
+DIFF_FILE="$KBN_INSTRUMENT_DIR/diff"
 
 usage() {
     echo "Usage: $0 [--before | --after]"
