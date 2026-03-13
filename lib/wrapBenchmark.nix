@@ -79,6 +79,7 @@ wrappedProg
                   diskSize = lib.mkDefault (2 * 1024); # Megabytes
                   # This seems to speed up boot a bit.
                   cores = 8;
+                  memorySize = lib.mkDefault (6 * 1024); # Megabytes
                 };
               };
               boot.tmp.useTmpfs = true;
