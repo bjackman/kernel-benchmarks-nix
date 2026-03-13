@@ -76,10 +76,9 @@ wrappedProg
               # with systemd.unit=kbn-guest.service
               systemd.services.kbn-guest = {
                 script = ''
-                  # Writing the value v to the isa-debug-exit port will cause QEMU to
-                  # immediately exit with the exit code `v << 1 | 1`.
-                  ${lib.getExe wrappedProg} --out-dir /mnt/kbn-output \
-                    || ${pkgs.ioport}/bin/outb ${qemuExitPortHex} $(( $? - 1 ))
+                  set +e
+                  ${lib.getExe wrappedProg} --out-dir /mnt/kbn-output
+                  echo $? > /run/kbn-exit-code
                 '';
                 serviceConfig = {
                   Type = "oneshot";
@@ -87,8 +86,36 @@ wrappedProg
                   StandardError = "tty";
                 };
                 onSuccess = [ "poweroff.target" ];
+                onFailure = [ "poweroff.target" ];
                 after = lib.optional requiresInternet "network-online.target";
                 wants = lib.optional requiresInternet "network-online.target";
+              };
+              # This service does the forwarding of the benchmark exit code to
+              # the QEMU hypervisor. I think the proper way to do this would be
+              # /usr/lib/systemd/systemd-shutdown/ but I couldn't get that
+              # working so whatever.
+              systemd.services.kbn-shutdown-exit = {
+                unitConfig.DefaultDependencies = false;
+                script = ''
+                  set +x
+                  if [ -f /run/kbn-exit-code ]; then
+                    CODE=$(cat /run/kbn-exit-code)
+                  else
+                    echo "/run/kbn-exit-code missing"
+                    CODE=213
+                  fi
+                  # Writing the value v to the isa-debug-exit port will cause QEMU to
+                  # immediately exit with the exit code `v << 1 | 1`.
+                  ${pkgs.ioport}/bin/outb ${qemuExitPortHex} $(( CODE - 1 ))
+                '';
+                serviceConfig = {
+                  Type = "oneshot";
+                  StandardOutput = "tty";
+                  StandardError = "tty";
+                };
+                after = [ "shutdown.target" ];
+                before = [ "poweroff.target" ];
+                wantedBy = [ "poweroff.target" ];
               };
               boot.kernelParams = [ "systemd.unit=kbn-guest.service" ];
               # Don't bother storing logs to disk, that seems like it will just
