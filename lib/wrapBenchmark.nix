@@ -129,11 +129,21 @@ wrappedProg
                 before = [ "poweroff.target" ];
                 wantedBy = [ "poweroff.target" ];
               };
-              services.getty.autologinUser = "root";
               # Don't bother storing logs to disk, that seems like it will just
               # occasionally lead to unnecessary slowdowns for log rotation and
               # stuff.
               services.journald.storage = "volatile";
+
+              services.getty.autologinUser = "root";
+              services.openssh = {
+                enable = true;
+                settings = {
+                  PermitEmptyPasswords = "yes";
+                  PermitRootLogin = "yes";
+                };
+              };
+              users.users.root.initialHashedPassword = "";
+              security.pam.services.sshd.allowNullPassword = true;
             }
           ]
           ++ nixosModules;
@@ -146,7 +156,23 @@ wrappedProg
       name = "${name}-in-vm";
       runtimeInputs = [ pkgs.getopt ];
       text = ''
-        PARSED_ARGUMENTS=$(getopt -o i --long interactive -- "$@")
+        usage() {
+            cat <<EOF
+        Usage: $(basename "$0") [OPTIONS]
+
+        Options:
+          -i, --interactive    Drop into a root shell instead of just running
+                               benchmark and shutting down.
+          --vsock-cid          CID to assign for the guest for vsock connection.
+                               Default is 3 - this is a global resource so if you're
+                               running multiple instances at once you'll get errors.
+          -b, --shutdown       Just boot and then immediately shut down again.
+          -h, --help           Display this help message and exit.
+
+        EOF
+        }
+
+        PARSED_ARGUMENTS=$(getopt -o i --long interactive,vsock-cid: -- "$@")
 
         # shellcheck disable=SC2181
         if [ $? -ne 0 ]; then
@@ -157,12 +183,21 @@ wrappedProg
         eval set -- "$PARSED_ARGUMENTS"
 
         INTERACTIVE=false
+        VSOCK_CID=3
 
         while true; do
             case "$1" in
                 -i|--interactive)
                   INTERACTIVE=true
                   shift
+                  ;;
+                --vsock-cid)
+                  VSOCK_CID="$2"
+                  shift 2
+                  ;;
+                -h|--help)
+                  usage
+                  exit 0
                   ;;
                 --)
                   shift
@@ -175,6 +210,8 @@ wrappedProg
             esac
         done
 
+        QEMU_OPTS=
+
         # Normal mode is just to run the benchmark via the kbn-guest systemd
         # service then shut down. Otherwise, we'll rely on autologin to give us
         # a root shell which can be used to poke around in the guest for
@@ -183,8 +220,13 @@ wrappedProg
           export QEMU_KERNEL_PARAMS="systemd.unit=kbn-guest.service"
         fi
 
+        if [[ "$VSOCK_CID" != -1 ]]; then
+          QEMU_OPTS="$QEMU_OPTS -device vhost-vsock-pci,guest-cid=$VSOCK_CID"
+        fi
+
         # TODO: Set this properly
         export KBN_OUTPUT_HOST=/tmp/kbn_guest_output
+        export QEMU_OPTS
         mkdir -p "$KBN_OUTPUT_HOST"
         ${nixosRunner}/bin/run-${hostName}-vm
       '';
