@@ -16,11 +16,21 @@
   requiresInternet ? false,
 }:
 let
-  wrappedProg = pkgs.writeShellScriptBin "${name}-wrapped" ''
-    export KBN_CACHE_DIR=''${XDG_CACHE_HOME:-"$HOME"/.cache}/kbn/${name}
-    mkdir -p "$KBN_CACHE_DIR"
-    exec "${lib.getExe rawBenchmark}" "$@"
-  '';
+  wrappedProg = pkgs.writeShellApplication {
+    name = "${name}-wrapped";
+    # In the in-vm wrapper we'll be running this via a hyper-minimal systemd
+    # environment so tack on a bunch of extra dependencies that would be missing
+    # from there.
+    runtimeInputs = with pkgs; [
+      which
+      bash
+    ];
+    text = ''
+      export KBN_CACHE_DIR=''${XDG_CACHE_HOME:-"$HOME"/.cache}/kbn/${name}
+      mkdir -p "$KBN_CACHE_DIR"
+      exec "${lib.getExe rawBenchmark}" "$@"
+    '';
+  };
 in
 wrappedProg
 // {
