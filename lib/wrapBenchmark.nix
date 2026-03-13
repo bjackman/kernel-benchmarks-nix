@@ -100,8 +100,8 @@ wrappedProg
                   };
                   onSuccess = [ "poweroff.target" ];
                   onFailure = [ "poweroff.target" ];
-                  after = lib.optional requiresInternet "network-online.target";
-                  wants = lib.optional requiresInternet "network-online.target";
+                  after = [ "multi-user.target" ] ++ lib.optional requiresInternet "network-online.target";
+                  wants = [ "multi-user.target" ] ++ lib.optional requiresInternet "network-online.target";
                 };
                 # This service does the forwarding of the benchmark exit code to
                 # the QEMU hypervisor. I think the proper way to do this would be
