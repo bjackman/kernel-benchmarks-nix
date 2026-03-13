@@ -156,9 +156,11 @@ wrappedProg
                       echo "/run/kbn-exit-code missing"
                       CODE=213
                     fi
-                    # Writing the value v to the isa-debug-exit port will cause QEMU to
-                    # immediately exit with the exit code `v << 1 | 1`.
-                    ${pkgs.ioport}/bin/outb ${qemuExitPortHex} $(( CODE - 1 ))
+                    if [ "$CODE" -ne 0 ]; then
+                      # Writing the value v to the isa-debug-exit port will cause QEMU to
+                      # immediately exit with the exit code `v << 1 | 1`.
+                      ${pkgs.ioport}/bin/outb -- ${qemuExitPortHex} $(( CODE - 1 ))
+                    fi
                   '';
                   serviceConfig = {
                     Type = "oneshot";
