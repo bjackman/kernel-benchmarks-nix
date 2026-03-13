@@ -7,6 +7,10 @@
   # files owned by root.
   virtualisation.docker.enable = true;
 
-  # Need to download container images, big disk when testing in a VM plz.
-  virtualisation.vmVariant.virtualisation.diskSize = 16 * 1024; # Megabytes
+  virtualisation.vmVariant.virtualisation = {
+    # Need to download container images, big disk when testing in a VM plz.
+    diskSize = 16 * 1024; # Megabytes
+    # Also this is a big workload, much RAM
+    memorySize = 32 * 1024;
+  };
 }
