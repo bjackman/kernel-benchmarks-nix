@@ -26,7 +26,8 @@ let
       bash
     ];
     text = ''
-      export KBN_CACHE_DIR=''${XDG_CACHE_HOME:-"$HOME"/.cache}/kbn/${name}
+      BASE_CACHE="''${CACHE_DIRECTORY:-''${XDG_CACHE_HOME:-''${HOME:+$HOME/.cache}}}"
+      export KBN_CACHE_DIR="$BASE_CACHE/kbn/${name}"
       mkdir -p "$KBN_CACHE_DIR"
       exec "${lib.getExe rawBenchmark}" "$@"
     '';
@@ -94,6 +95,7 @@ wrappedProg
                   Type = "oneshot";
                   StandardOutput = "tty";
                   StandardError = "tty";
+                  CacheDir = "kbn-guest";
                 };
                 onSuccess = [ "poweroff.target" ];
                 onFailure = [ "poweroff.target" ];
