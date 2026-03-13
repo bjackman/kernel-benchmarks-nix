@@ -75,16 +75,12 @@ wrappedProg
               # encode the benchmark into a systemd service. You can then run it
               # with systemd.unit=kbn-guest.service
               systemd.services.kbn-guest = {
-                script =
-                  let
-                    outDir = virtualisation.vmVariant.virtualisation.sharedDirectories.ktests-output.target;
-                  in
-                  ''
-                    # Writing the value v to the isa-debug-exit port will cause QEMU to
-                    # immediately exit with the exit code `v << 1 | 1`.
-                    ${lib.getExe wrappedProg} --out-dir /mnt/kbn-output \
-                      || ${pkgs.ioport}/bin/outb ${qemuExitPortHex} $(( $? - 1 ))
-                  '';
+                script = ''
+                  # Writing the value v to the isa-debug-exit port will cause QEMU to
+                  # immediately exit with the exit code `v << 1 | 1`.
+                  ${lib.getExe wrappedProg} --out-dir /mnt/kbn-output \
+                    || ${pkgs.ioport}/bin/outb ${qemuExitPortHex} $(( $? - 1 ))
+                '';
                 serviceConfig = {
                   Type = "oneshot";
                   StandardOutput = "tty";
@@ -100,7 +96,8 @@ wrappedProg
               # stuff.
               services.journald.storage = "volatile";
             }
-          ] ++ nixosModules;
+          ]
+          ++ nixosModules;
       };
       # This is the "official" entry point for running NixOS as a QEMU guest, we'll
       # wrap this.
