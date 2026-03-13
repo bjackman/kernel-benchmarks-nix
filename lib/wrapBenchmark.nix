@@ -76,7 +76,7 @@ wrappedProg
                   };
                   # Attempt to ensure there's space left over in the rootfs (which
                   # may be where /tmp is).
-                  diskSize = 2 * 1024; # Megabytes
+                  diskSize = lib.mkDefault (2 * 1024); # Megabytes
                   # This seems to speed up boot a bit.
                   cores = 8;
                 };
