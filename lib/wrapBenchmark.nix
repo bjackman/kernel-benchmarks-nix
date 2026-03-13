@@ -129,7 +129,7 @@ wrappedProg
                 before = [ "poweroff.target" ];
                 wantedBy = [ "poweroff.target" ];
               };
-              boot.kernelParams = [ "systemd.unit=kbn-guest.service" ];
+              services.getty.autologinUser = "root";
               # Don't bother storing logs to disk, that seems like it will just
               # occasionally lead to unnecessary slowdowns for log rotation and
               # stuff.
@@ -144,7 +144,45 @@ wrappedProg
     in
     pkgs.writeShellApplication {
       name = "${name}-in-vm";
+      runtimeInputs = [ pkgs.getopt ];
       text = ''
+        PARSED_ARGUMENTS=$(getopt -o i --long interactive -- "$@")
+
+        # shellcheck disable=SC2181
+        if [ $? -ne 0 ]; then
+          echo "Error: Failed to parse arguments." >&2
+          usage
+          exit 1
+        fi
+        eval set -- "$PARSED_ARGUMENTS"
+
+        INTERACTIVE=false
+
+        while true; do
+            case "$1" in
+                -i|--interactive)
+                  INTERACTIVE=true
+                  shift
+                  ;;
+                --)
+                  shift
+                  break
+                  ;;
+                *)
+                  echo "Unexpected argument $1" >&2
+                  exit 1
+                  ;;
+            esac
+        done
+
+        # Normal mode is just to run the benchmark via the kbn-guest systemd
+        # service then shut down. Otherwise, we'll rely on autologin to give us
+        # a root shell which can be used to poke around in the guest for
+        # debugging.
+        if ! "$INTERACTIVE"; then
+          export QEMU_KERNEL_PARAMS="systemd.unit=kbn-guest.service"
+        fi
+
         # TODO: Set this properly
         export KBN_OUTPUT_HOST=/tmp/kbn_guest_output
         mkdir -p "$KBN_OUTPUT_HOST"
