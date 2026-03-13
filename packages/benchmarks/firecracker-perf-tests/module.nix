@@ -11,6 +11,6 @@
     # Need to download container images, big disk when testing in a VM plz.
     diskSize = 16 * 1024; # Megabytes
     # Also this is a big workload, much RAM
-    memorySize = 32 * 1024;
+    memorySize = 64 * 1024;
   };
 }
