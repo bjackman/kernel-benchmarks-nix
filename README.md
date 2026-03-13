@@ -105,6 +105,8 @@ require no network, boring old packages for the rest).
 - Figure out how to expose the Falba parser stuff
 - Figure out how to expose the instrumentation stuff
 - Split up benchmark running into phases
+- Figure out how to parameterise benchmarks. This should probably include a
+  hardcoded set of "tested configurations" for each benchmark.
 - Start porting some bits to a proper programming language?
 - Figure out how to do instrumentation processing offline with a better API in
   Falba. At the moment it's being done on the target host which is dumb.
