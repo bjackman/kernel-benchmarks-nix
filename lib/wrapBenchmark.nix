@@ -18,13 +18,6 @@
 let
   wrappedProg = pkgs.writeShellApplication {
     name = "${name}-wrapped";
-    # In the in-vm wrapper we'll be running this via a hyper-minimal systemd
-    # environment so tack on a bunch of extra dependencies that would be missing
-    # from there.
-    runtimeInputs = with pkgs; [
-      which
-      bash
-    ];
     text = ''
       BASE_CACHE="''${CACHE_DIRECTORY:-''${XDG_CACHE_HOME:-''${HOME:+$HOME/.cache}}}"
       export KBN_CACHE_DIR="$BASE_CACHE/kbn/${name}"
@@ -94,6 +87,11 @@ wrappedProg
                     ${lib.getExe wrappedProg} --out-dir /mnt/kbn-output
                     echo $? > /run/kbn-exit-code
                   '';
+                  # Put all the stuff that a normal NixOS system has into the
+                  # systemd service environment, to make testing more practical.
+                  # Use systemPackages instead of corePackages so that stuff
+                  # installed by the benchmark's NixOS module is also visible.
+                  path = config.environment.systemPackages;
                   serviceConfig = {
                     Type = "oneshot";
                     StandardOutput = "tty";
