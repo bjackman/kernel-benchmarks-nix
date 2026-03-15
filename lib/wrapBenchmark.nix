@@ -137,8 +137,10 @@ wrappedProg
                     StandardError = "tty";
                     CacheDirectory = "kbn-guest";
                   };
-                  onSuccess = [ "poweroff.target" ];
-                  onFailure = [ "poweroff.target" ];
+                  unitConfig = {
+                    SuccessAction = "poweroff";
+                    FailureAction = "poweroff";
+                  };
                   after = [ "multi-user.target" ] ++ lib.optional requiresInternet "network-online.target";
                   wants = [ "multi-user.target" ] ++ lib.optional requiresInternet "network-online.target";
                 };
