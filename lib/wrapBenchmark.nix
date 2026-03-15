@@ -188,6 +188,8 @@ wrappedProg
                 };
                 users.users.root.initialHashedPassword = "";
                 security.pam.services.sshd.allowNullPassword = true;
+
+                system.stateVersion = "25.11";
               }
             )
           ]
