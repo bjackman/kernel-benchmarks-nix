@@ -73,8 +73,11 @@
 
       formatter.${system} = pkgs.nixfmt-tree;
 
+      # TODO: Add checks for the rest of the benchmarks. For ones that don't
+      # couple to the OS, run them natively.
       checks.${system}.bench-hello-world = pkgs.runCommand "check-bench-hello-world" { } ''
-        ${lib.getExe self.benchmarks.${system}.hello-world.in-vm}
+        # Disable vsock since that doesn't work in the Nix sandbox.
+        timeout 30 ${lib.getExe self.benchmarks.${system}.hello-world.in-vm} --vsock-cid=-1
         touch $out
       '';
 
