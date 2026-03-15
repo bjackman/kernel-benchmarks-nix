@@ -135,7 +135,7 @@ wrappedProg
                     Type = "oneshot";
                     StandardOutput = "tty";
                     StandardError = "tty";
-                    CacheDir = "kbn-guest";
+                    CacheDirectory = "kbn-guest";
                   };
                   onSuccess = [ "poweroff.target" ];
                   onFailure = [ "poweroff.target" ];
