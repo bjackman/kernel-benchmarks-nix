@@ -59,8 +59,6 @@
         in
         {
           firecracker-perf-tests = makeBenchprog ./packages/benchmarks/firecracker-perf-tests;
-          firecracker-snapshot-restore = makeBenchprog ./packages/benchmarks/firecracker-snapshot-restore;
-          firecracker-boot = makeBenchprog ./packages/benchmarks/firecracker-boot.nix;
           hello-world = makeBenchprog ./packages/benchmarks/hello-world.nix;
           stress-ng = makeBenchprog ./packages/benchmarks/stress-ng;
         };
