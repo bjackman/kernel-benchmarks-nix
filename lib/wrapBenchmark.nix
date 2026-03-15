@@ -72,7 +72,7 @@ let
   };
 in
 wrappedProg
-// {
+// rec {
   inherit requiresInternet;
   # This produces a version of the benchmark that gets run in a NixOS VM. The
   # purposes of this are a) for benchmarking a host's performance as a
@@ -290,5 +290,29 @@ wrappedProg
       '';
       passthru = { inherit nixosConfig requiresInternet; };
     };
+  # Provides a check to actually run the benchmark - this is not included in the
+  # checkPhase of the main derviation as it's probably slow; instead this lets
+  # it be offloaded into the flake check output. This is NULL if the benchmark
+  # can't be run in the Nix build sandbox.
+  heavyCheck =
+    if requiresInternet then
+      null
+    else
+      let
+        # If it has NixOS modules then we assume it can only be run in a VM. If
+        # needed we can also add a flag to let benchmarks explicitly mark
+        # themselves as needing a VM for other reasons (e.g. needing root).
+        command =
+          if builtins.length nixosModules != 0 then
+            # Disable vsock since that doesn't work in the Nix sandbox.
+            "${lib.getExe in-vm} --vsock-cid=-1"
+          else
+            lib.getExe wrappedProg;
+      in
+      pkgs.runCommand "check-bench-${name}" { } ''
+        export CACHE_DIRECTORY="$TMPDIR/kbn-cache"
+        timeout 30 ${command}
+        touch $out
+      '';
 }
 // passthru
