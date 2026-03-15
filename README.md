@@ -56,36 +56,37 @@ interfaces between them. Later it might make sense to port some parts to Go.
 
 TODOS: (Many of these are duplicated as comments elsewhere):
 
-- NEXT: Make `nix run .#benchmarks.x86_64-linux.firecracker-perf-tests.in-vm` work.
-- Package something like the above into "tests" (nix flake check for ones that
+- [x] Make `nix run .#benchmarks.x86_64-linux.firecracker-perf-tests.in-vm` work.
+- [x] Package something like the above into "tests" (nix flake check for ones that
   require no network, boring old packages for the rest).
 
   (I can't remember why I was working on this, but somehow it should help with
   the next step).
-- Figure out how to expose the relevant derivations to a user's devShell
-  - First, support running benchmarks without needing to provide their
+- [ ] Add tests for run-benchprog
+- [ ] Figure out how to expose the relevant derivations to a user's devShell
+  - [ ] First, support running benchmarks without needing to provide their
     flakeref/store path.
-  - Eventually, should offer a way for the user to add their own
+  - [ ] Eventually, should offer a way for the user to add their own
     benchmarks/instruments when they instantiate the package.
-  - With the above done, perhaps we want to drop the ability to just pass in a
+  - [ ] With the above done, perhaps we want to drop the ability to just pass in a
     random binary run-benchprog.
-- Figure out how to expose the Falba parser stuff
-  - One challenge here is that we want instrumentation/benchmarks to be very
+- [ ] Figure out how to expose the Falba parser stuff
+  - [ ] One challenge here is that we want instrumentation/benchmarks to be very
     promiscuous about what artifacts they capture, and we want them to provide as
     much logic as possible to parse the stuff that's easy to parse. But, we don't
     wan't to overwhelm the user's Falba DB with a bunch of metrics they don't care
     about. So we need to give them a way to adopt subsets of the parsing logic.
-- Figure out how to expose the instrumentation stuff
-- Split up benchmark running into phases
-- Figure out how to parameterise benchmarks. This should probably include a
+- [ ] Figure out how to expose the instrumentation stuff
+- [ ] Split up benchmark running into phases
+- [ ] Figure out how to parameterise benchmarks. This should probably include a
   hardcoded set of "tested configurations" for each benchmark.
-- Start porting some bits to a proper programming language?
-- Figure out how to do instrumentation processing offline with a better API in
+- [ ] Start porting some bits to a proper programming language?
+- [ ] Figure out how to do instrumentation processing offline with a better API in
   Falba. At the moment it's being done on the target host which is dumb.
-- Add the other missing elements from the elements listed above
-- Clean up naming a bit.
-- Figure out how to paramaterise benchprogs
-- Add a flake template
-- Define what a "benchprog" is and what a "benchmark" is, then clean up
+- [ ] Add the other missing elements from the elements listed above
+- [ ] Clean up naming a bit.
+- [ ] Figure out how to paramaterise benchprogs
+- [ ] Add a flake template
+- [ ] Define what a "benchprog" is and what a "benchmark" is, then clean up
   nomenclature in the codebase. I think this requires more experience with
   actually packaging benchmarks though.
