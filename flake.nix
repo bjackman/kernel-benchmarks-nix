@@ -71,13 +71,16 @@
 
       formatter.${system} = pkgs.nixfmt-tree;
 
-      # TODO: Add checks for the rest of the benchmarks. For ones that don't
-      # couple to the OS, run them natively.
-      checks.${system}.bench-hello-world = pkgs.runCommand "check-bench-hello-world" { } ''
-        # Disable vsock since that doesn't work in the Nix sandbox.
-        timeout 30 ${lib.getExe self.benchmarks.${system}.hello-world.in-vm} --vsock-cid=-1
-        touch $out
-      '';
+      checks.${system} = lib.mapAttrs' (
+        name: bench:
+        lib.nameValuePair "bench-${name}" (
+          pkgs.runCommand "check-bench-${name}" { } ''
+            # Disable vsock since that doesn't work in the Nix sandbox.
+            timeout 30 ${lib.getExe bench.in-vm} --vsock-cid=-1
+            touch $out
+          ''
+        )
+      ) (lib.filterAttrs (_: b: !b.requiresInternet) self.benchmarks.${system});
 
       # This devShell provides a bunch of tools for running these benchmarks.
       devShells.${system}.default = pkgs.mkShell {

@@ -67,6 +67,7 @@ let
 in
 wrappedProg
 // {
+  inherit requiresInternet;
   # This produces a version of the benchmark that gets run in a NixOS VM. The
   # purposes of this are a) for benchmarking a host's performance as a
   # hypervisor and b) for integration-testing the benchmark script.
@@ -277,7 +278,7 @@ wrappedProg
         mkdir -p "$KBN_OUTPUT_HOST"
         ${nixosRunner}/bin/run-${hostName}-vm
       '';
-      passthru = { inherit nixosConfig; };
+      passthru = { inherit nixosConfig requiresInternet; };
     };
 }
 // passthru
