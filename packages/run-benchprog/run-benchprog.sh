@@ -13,7 +13,33 @@ SSH_PORT=22
 DO_NIX_COPY=true
 RUN_IN_VM=false
 
-PARSED_ARGUMENTS=$(getopt -o d:c:v --long falba-db:,collect:,instruments:,ssh-port:,no-copy,in-vm -- "$@")
+usage() {
+    cat <<EOF
+Usage: $(basename "$0") [OPTIONS] SSH_TARGET BENCHPROG
+
+Arguments:
+  SSH_TARGET              The target machine to connect to via SSH (e.g., user@host).
+  BENCHPROG               The benchmark to run (either a built-in name from the registry or a Nix flakeref).
+
+Options:
+  -d, --falba-db DIR      [Required] Path to an existing Falba database directory.
+  -c, --collect FILE      Collect specified remote file into the host info directory. Can be passed multiple times.
+  --instruments INSTR     Specify instruments to execute before and after the benchmark. Can be passed multiple times.
+  --ssh-port PORT         Specify the SSH port to use.
+  --no-copy               Skip executing 'nix copy' to push packages to the target.
+  -v, --in-vm             Run the benchmark inside a VM (only supported for built-in benchmarks in the registry).
+  -h, --help              Display this help message and exit.
+
+EOF
+
+    echo -e "Built-in benchmarks:\n  "
+    jq -r 'keys | .[]' < "$BENCHMARK_REGISTRY_JSON" | sed 's/^/  - /'
+    echo -e "\nBuilt-in instruments:\n  "
+    jq -r 'keys | .[]' < "$INSTRUMENT_REGISTRY_JSON" | sed 's/^/  - /'
+}
+
+PARSED_ARGUMENTS=$(getopt -o d:c:vh --long falba-db:,collect:,instruments:,ssh-port:,no-copy,in-vm,help -- "$@")
+
 # shellcheck disable=SC2181
 if [ $? -ne 0 ]; then
     echo "Error: Failed to parse arguments." >&2
