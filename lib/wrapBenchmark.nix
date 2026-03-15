@@ -17,7 +17,7 @@
 }:
 let
   wrappedProg = pkgs.writeShellApplication {
-    name = "${name}-wrapped";
+    name = "${name}";
     runtimeInputs = with pkgs; [ getopt ];
     text = ''
       OUT_DIR=
