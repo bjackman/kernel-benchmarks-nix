@@ -70,10 +70,6 @@ let
       exec "${lib.getExe rawBenchmark}" "$@"
     '';
   };
-in
-wrappedProg
-// rec {
-  inherit requiresInternet;
   # This produces a version of the benchmark that gets run in a NixOS VM. The
   # purposes of this are a) for benchmarking a host's performance as a
   # hypervisor and b) for integration-testing the benchmark script.
@@ -290,29 +286,42 @@ wrappedProg
       '';
       passthru = { inherit nixosConfig requiresInternet; };
     };
+  testScript =
+    let
+      # If it has NixOS modules then we assume it can only be run in a VM. If
+      # needed we can also add a flag to let benchmarks explicitly mark
+      # themselves as needing a VM for other reasons (e.g. needing root).
+      command =
+        if builtins.length nixosModules != 0 then
+          # Disable vsock since that doesn't work in the Nix sandbox.
+          "${lib.getExe in-vm} --vsock-cid=-1"
+        else
+          lib.getExe wrappedProg;
+    in
+    ''
+      timeout 30 ${command}
+    '';
+in
+wrappedProg
+// rec {
+  inherit requiresInternet in-vm;
   # Provides a check to actually run the benchmark - this is not included in the
   # checkPhase of the main derviation as it's probably slow; instead this lets
-  # it be offloaded into the flake check output. This is NULL if the benchmark
+  # it be offloaded into the flake check output. This is null if the benchmark
   # can't be run in the Nix build sandbox.
   heavyCheck =
     if requiresInternet then
       null
     else
-      let
-        # If it has NixOS modules then we assume it can only be run in a VM. If
-        # needed we can also add a flag to let benchmarks explicitly mark
-        # themselves as needing a VM for other reasons (e.g. needing root).
-        command =
-          if builtins.length nixosModules != 0 then
-            # Disable vsock since that doesn't work in the Nix sandbox.
-            "${lib.getExe in-vm} --vsock-cid=-1"
-          else
-            lib.getExe wrappedProg;
-      in
       pkgs.runCommand "check-bench-${name}" { } ''
         export CACHE_DIRECTORY="$TMPDIR/kbn-cache"
-        timeout 30 ${command}
+        ${testScript}
         touch $out
       '';
+  # If heavyCheck was null then impureCheck can be used instead. Instead of
+  # being a check (i.e. something you build, if it builds the test passed) this
+  # is a binary that you run (via nix run).
+  impureTest =
+    if requiresInternet then pkgs.writeShellScriptBin "check-bench-${name}" testScript else null;
 }
 // passthru

@@ -44,6 +44,18 @@
       packages.${system} = rec {
         instrument-vmstat = pkgs.callPackage ./packages/instruments/vmstat { };
         run-benchprog = pkgs.callPackage ./packages/run-benchprog { inherit instrument-vmstat; };
+
+        impure-tests =
+          let
+            tests = lib.mapAttrsToList (name: bench: bench.impureTest) (
+              lib.filterAttrs (_: b: b.impureTest != null) self.benchmarks.${system}
+            );
+          in
+          pkgs.writeShellScriptBin "impure-tests" ''
+            for t in ${builtins.concatStringsSep " " (map (t: lib.getExe t) tests)}; do
+              "$t"
+            done
+          '';
       };
       # TODO: Expose generated falba parser configuration.
 
