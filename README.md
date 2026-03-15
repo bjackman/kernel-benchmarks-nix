@@ -64,7 +64,7 @@ TODOS: (Many of these are duplicated as comments elsewhere):
   the next step).
 - [ ] Add tests for run-benchprog
 - [ ] Figure out how to expose the relevant derivations to a user's devShell
-  - [ ] First, support running benchmarks without needing to provide their
+  - [x] First, support running benchmarks without needing to provide their
     flakeref/store path.
   - [ ] Eventually, should offer a way for the user to add their own
     benchmarks/instruments when they instantiate the package.
