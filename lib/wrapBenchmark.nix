@@ -71,6 +71,10 @@ wrappedProg
   # This produces a version of the benchmark that gets run in a NixOS VM. The
   # purposes of this are a) for benchmarking a host's performance as a
   # hypervisor and b) for integration-testing the benchmark script.
+  # However, it's possible this is dumb: for a) maybe the idea of running random
+  # benchmarks in an arbitrary VMM is as silly way to benchmark. For b) maybe
+  # NixOS VM tests would be more suitable.
+  # TODO: Move this VM logic into a separate Nix file.
   in-vm =
     let
       hostName = "testvm-${name}";
