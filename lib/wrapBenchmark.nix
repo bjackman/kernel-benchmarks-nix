@@ -52,7 +52,12 @@ let
           esac
       done
 
-      if [ "$OUT_DIR" == "" ] || [ ! -d "$OUT_DIR" ] || [ ! -z "$(ls -A "$OUT_DIR")" ]; then
+      if [ "$OUT_DIR" == "" ]; then
+          OUT_DIR="$(mktemp -d)"
+          echo "WARNING: --out-dir not set, using $OUT_DIR"
+      fi
+
+      if [ ! -d "$OUT_DIR" ] || [ ! -z "$(ls -A "$OUT_DIR")" ]; then
           echo "--out-dir must point to an empty directory."
           exit 1
       fi
