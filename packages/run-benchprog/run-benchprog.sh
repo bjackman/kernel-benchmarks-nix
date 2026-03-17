@@ -142,7 +142,7 @@ else
         echo "able to append .in-vm to the flakeref to run it in a VM."
         exit 1
     fi
-    bench_name=$(nix eval --raw "$BENCHPROG.meta.mainProgram")
+    bench_executable=$(nix eval --raw "$BENCHPROG.meta.mainProgram")
 fi
 
 to_install=("$bench_executable")
