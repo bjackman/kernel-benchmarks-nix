@@ -183,6 +183,7 @@ do_ssh "$bench_executable" --out-dir "$remote_tmpdir"
 
 # Handle Instrumentation Teardown
 for executable in "${instr_executables[@]}"; do
+    subdir="$remote_instr_dir/$(basename "$executable")"
     do_ssh "KBN_INSTRUMENT_DIR=$subdir $executable --after"
 done
 rsync --rsync-path="$rsync_store_path" -avz "$SSH_TARGET:$remote_instr_dir/" "$collected_files_dir/instrumentation/"
