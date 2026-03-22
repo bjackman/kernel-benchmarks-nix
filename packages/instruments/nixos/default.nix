@@ -1,5 +1,5 @@
 { pkgs, ... }:
 pkgs.writeShellApplication {
-  name = "instrument-nixos";
+  name = "nixos";
   text = builtins.readFile ./instrument-nixos.sh;
 }
