@@ -91,3 +91,6 @@ TODOS: (Many of these are duplicated as comments elsewhere):
   nomenclature in the codebase. I think this requires more experience with
   actually packaging benchmarks though.
 - [ ] Figure out how to set up target hosts with trust for the user.
+- [ ] Improve failure logging. E.g. right now if an instrument fails you just
+  get its log and then things stop. But this would probably be best done
+  downstream of porting to a proper language.
