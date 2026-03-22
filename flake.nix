@@ -119,8 +119,12 @@
           run-benchprog-integration = pkgs.callPackage ./packages/run-benchprog/integration-test.nix {
             inherit (self.packages.${system}) run-benchprog;
           };
+          instrument-vmstat-integration =
+            pkgs.callPackage ./packages/instruments/vmstat/integration-test.nix
+              {
+                vmstat = self.instruments.${system}.vmstat;
+              };
         };
-
       # This devShell provides a bunch of tools for running these benchmarks.
       devShells.${system}.default = pkgs.mkShell {
         packages = with pkgs; [
