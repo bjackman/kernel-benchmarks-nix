@@ -91,9 +91,15 @@
 
       formatter.${system} = pkgs.nixfmt-tree;
 
-      checks.${system} = lib.mapAttrs (name: bench: bench.heavyCheck) (
-        lib.filterAttrs (_: b: b.heavyCheck != null) self.benchmarks.${system}
-      );
+      checks.${system} =
+        lib.mapAttrs (name: bench: bench.heavyCheck) (
+          lib.filterAttrs (_: b: b.heavyCheck != null) self.benchmarks.${system}
+        )
+        // {
+          run-benchprog-integration = pkgs.callPackage ./packages/run-benchprog/integration-test.nix {
+            inherit (self.packages.${system}) run-benchprog;
+          };
+        };
 
       # This devShell provides a bunch of tools for running these benchmarks.
       devShells.${system}.default = pkgs.mkShell {
