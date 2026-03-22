@@ -48,6 +48,26 @@
           instruments = self.instruments.${system};
         };
 
+        falba-parsers =
+          let
+            # Collect all benchmarks and instruments that have a falba-parsers-json passthru.
+            allProviders = lib.filterAttrs (_: p: p ? falba-parsers-json) (
+              self.benchmarks.${system} // self.instruments.${system}
+            );
+            # Map them to their parser JSON files, naming each file <name>.json.
+            parserFiles = lib.mapAttrsToList (
+              name: provider:
+              pkgs.runCommand "${name}-falba-parsers.json" { } ''
+                mkdir -p $out
+                cp ${provider.falba-parsers-json} $out/${name}.json
+              ''
+            ) allProviders;
+          in
+          pkgs.symlinkJoin {
+            name = "falba-parsers";
+            paths = parserFiles;
+          };
+
         impure-tests =
           let
             tests = lib.mapAttrsToList (name: bench: bench.impureTest) (
