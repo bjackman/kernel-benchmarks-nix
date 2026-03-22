@@ -90,3 +90,4 @@ TODOS: (Many of these are duplicated as comments elsewhere):
 - [ ] Define what a "benchprog" is and what a "benchmark" is, then clean up
   nomenclature in the codebase. I think this requires more experience with
   actually packaging benchmarks though.
+- [ ] Figure out how to set up target hosts with trust for the user.
