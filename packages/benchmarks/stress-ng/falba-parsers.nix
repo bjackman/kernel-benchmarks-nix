@@ -11,7 +11,6 @@
     metric = {
       name = "stress_ng_secretmem_bogo_ops_real_time";
       type = "float";
-      unit = "Hz";
     };
   };
   parsers.stress_ng_secretmem_system_time = {
