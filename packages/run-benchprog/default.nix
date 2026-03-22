@@ -14,6 +14,7 @@ pkgs.writeShellApplication rec {
     getopt
     rsync
     falba
+    jq
   ];
 
   runtimeEnv = {
