@@ -155,7 +155,7 @@ done
 
 if "$DO_NIX_COPY"; then
     for pkg in "${to_install[@]}"; do
-        nix copy --to ssh-ng://"$SSH_TARGET" "$pkg"
+        nix copy --no-check-sigs --to ssh-ng://"$SSH_TARGET" "$pkg"
     done
 fi
 
