@@ -127,6 +127,7 @@
           nixos-rebuild
           falba
         ];
+        FALBA_PARSERS_PATH = self.packages.${system}.falba-parsers;
       };
     };
 }
