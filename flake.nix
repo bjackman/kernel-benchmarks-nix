@@ -112,19 +112,18 @@
       formatter.${system} = pkgs.nixfmt-tree;
 
       checks.${system} =
-        lib.mapAttrs (name: bench: bench.heavyCheck) (
-          lib.filterAttrs (_: b: b.heavyCheck != null) self.benchmarks.${system}
+        let
+          testable = self.benchmarks.${system} // self.instruments.${system};
+        in
+        lib.mapAttrs (name: drv: drv.heavyCheck) (
+          lib.filterAttrs (_: b: b ? heavyCheck && b.heavyCheck != null) testable
         )
         // {
           run-benchprog-integration = pkgs.callPackage ./packages/run-benchprog/integration-test.nix {
             inherit (self.packages.${system}) run-benchprog;
           };
-          instrument-vmstat-integration =
-            pkgs.callPackage ./packages/instruments/vmstat/integration-test.nix
-              {
-                vmstat = self.instruments.${system}.vmstat;
-              };
         };
+
       # This devShell provides a bunch of tools for running these benchmarks.
       devShells.${system}.default = pkgs.mkShell {
         packages = with pkgs; [
