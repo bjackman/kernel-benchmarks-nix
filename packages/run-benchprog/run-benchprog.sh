@@ -160,23 +160,11 @@ if "$DO_NIX_COPY"; then
     done
 fi
 
-# Fetch generic target data
-# TODO: Immplement this as an instrument.
-host_info_dir="$(mktemp -d)"
-nixos_version_json="$host_info_dir"/nixos-version.json
-do_ssh "nixos-version --json" > "$nixos_version_json"
-do_ssh "readlink /run/current-system" > "$host_info_dir"/nixos_current_system
-do_ssh "readlink /run/booted-system" > "$host_info_dir"/nixos_booted_system
-do_ssh "cat /etc/os-release" > "$host_info_dir/os-release"
-
-if ! cmp "$host_info_dir"/nixos_current_system "$host_info_dir"/nixos_booted_system; then
-    echo "current-system and booted-system differ. Cowardly refusing to continue, try rebooting target."
-    exit 1
-fi
-
 # Collect additional requested files
+# TODO: make this a parameterised instrument.
+collected_files_dir="$(mktemp -d)"
 for remote_file in "${COLLECT_FILES[@]}"; do
-    scp "$SSH_TARGET:$remote_file" "$host_info_dir/" || echo "Warning: Failed to collect $remote_file" >&2
+    scp "$SSH_TARGET:$remote_file" "$collected_files_dir/" || echo "Warning: Failed to collect $remote_file" >&2
 done
 
 # Setup Remote Directories
@@ -197,12 +185,12 @@ do_ssh "$bench_executable" --out-dir "$remote_tmpdir"
 for executable in "${instr_executables[@]}"; do
     do_ssh "KBN_INSTRUMENT_DIR=$subdir $executable --after"
 done
-rsync --rsync-path="$rsync_store_path" -avz "$SSH_TARGET:$remote_instr_dir/" "$host_info_dir/instrumentation/"
+rsync --rsync-path="$rsync_store_path" -avz "$SSH_TARGET:$remote_instr_dir/" "$collected_files_dir/instrumentation/"
 
 # Fetch benchmark results
 local_tmpdir="${TMPDIR:-/tmp}/$(basename "$remote_tmpdir")"
 rsync --rsync-path="$rsync_store_path" -avz "$SSH_TARGET:$remote_tmpdir/" "$local_tmpdir/"
 
 # Import everything to Falba
-# We include the instrumentation data by passing the $host_info_dir glob
-falba import --test-name "$bench_name" --result-db "$FALBA_DB" "$local_tmpdir" "$host_info_dir"/**
+# We include the instrumentation data by passing the $collected_files_dir glob
+falba import --test-name "$bench_name" --result-db "$FALBA_DB" "$local_tmpdir" "$collected_files_dir"/**

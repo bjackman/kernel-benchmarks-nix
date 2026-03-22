@@ -80,6 +80,7 @@
 
       instruments.${system} = {
         vmstat = pkgs.callPackage ./packages/instruments/vmstat { };
+        nixos = pkgs.callPackage ./packages/instruments/nixos { };
       };
 
       nixosModules = {
