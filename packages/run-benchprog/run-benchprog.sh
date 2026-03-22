@@ -145,7 +145,8 @@ else
     bench_executable=$(nix eval --raw "$BENCHPROG.meta.mainProgram")
 fi
 
-to_install=("$bench_executable")
+rsync_store_path="$(realpath "$(which rsync)")"
+to_install=("$bench_executable" "$rsync_store_path")
 instr_executables=()
 for instr in "${INSTRUMENTS[@]}"; do
     executable=$(jq -er ".[\"$instr\"]" < "$INSTRUMENT_REGISTRY_JSON")
@@ -196,11 +197,11 @@ do_ssh "$bench_executable" --out-dir "$remote_tmpdir"
 for executable in "${instr_executables[@]}"; do
     do_ssh "KBN_INSTRUMENT_DIR=$subdir $executable --after"
 done
-rsync -avz "$SSH_TARGET:$remote_instr_dir/" "$host_info_dir/instrumentation/"
+rsync --rsync-path="$rsync_store_path" -avz "$SSH_TARGET:$remote_instr_dir/" "$host_info_dir/instrumentation/"
 
 # Fetch benchmark results
 local_tmpdir="${TMPDIR:-/tmp}/$(basename "$remote_tmpdir")"
-rsync -avz "$SSH_TARGET:$remote_tmpdir/" "$local_tmpdir/"
+rsync --rsync-path="$rsync_store_path" -avz "$SSH_TARGET:$remote_tmpdir/" "$local_tmpdir/"
 
 # Import everything to Falba
 # We include the instrumentation data by passing the $host_info_dir glob
