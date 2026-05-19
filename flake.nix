@@ -14,12 +14,17 @@
       url = "github:microvm-nix/microvm.nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    treefmt-nix = {
+      url = "github:numtide/treefmt-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
     {
       self,
       nixpkgs,
+      treefmt-nix,
       ...
     }@inputs:
     let
@@ -33,6 +38,11 @@
         ];
       };
       lib = pkgs.lib;
+      treefmtConfig = treefmt-nix.lib.evalModule pkgs {
+        projectRootFile = "flake.nix";
+        programs.nixfmt.enable = true;
+        programs.rustfmt.enable = true;
+      };
       # TODO: does it make sense to use this as a function like this? It means
       # we get to give the helper flake inputs so it can use nixosSystem. The
       # downside is it means things could get confusing if we build benchprogs
@@ -109,7 +119,7 @@
         # TODO: need a way to report whether a benchprog has an associated module.
       };
 
-      formatter.${system} = pkgs.nixfmt-tree;
+      formatter.${system} = treefmtConfig.config.build.wrapper;
 
       checks.${system} =
         let
@@ -122,6 +132,7 @@
           run-benchprog-integration = pkgs.callPackage ./packages/run-benchprog/integration-test.nix {
             inherit (self.packages.${system}) run-benchprog;
           };
+          formatting = treefmtConfig.config.build.check self;
         };
 
       # This devShell provides a bunch of tools for running these benchmarks.
