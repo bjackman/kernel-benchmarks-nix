@@ -14,6 +14,7 @@
   # Modules that are required for the host the benchprog is running in.
   nixosModules ? [ ],
   requiresInternet ? false,
+  worksInNixSandbox ? !requiresInternet,
 }:
 let
   wrappedProg = pkgs.writeShellApplication {
@@ -284,7 +285,7 @@ let
         mkdir -p "$KBN_OUTPUT_HOST"
         ${nixosRunner}/bin/run-${hostName}-vm
       '';
-      passthru = { inherit nixosConfig requiresInternet; };
+      passthru = { inherit nixosConfig requiresInternet worksInNixSandbox; };
     };
   testScript =
     let
@@ -304,24 +305,24 @@ let
 in
 wrappedProg
 // rec {
-  inherit requiresInternet in-vm;
+  inherit requiresInternet worksInNixSandbox in-vm;
   # Provides a check to actually run the benchmark - this is not included in the
   # checkPhase of the main derviation as it's probably slow; instead this lets
   # it be offloaded into the flake check output. This is null if the benchmark
   # can't be run in the Nix build sandbox.
   heavyCheck =
-    if requiresInternet then
-      null
-    else
+    if worksInNixSandbox then
       pkgs.runCommand "check-bench-${name}" { } ''
         export CACHE_DIRECTORY="$TMPDIR/kbn-cache"
         ${testScript}
         touch $out
-      '';
+      ''
+    else
+      null;
   # If heavyCheck was null then impureCheck can be used instead. Instead of
   # being a check (i.e. something you build, if it builds the test passed) this
   # is a binary that you run (via nix run).
   impureTest =
-    if requiresInternet then pkgs.writeShellScriptBin "check-bench-${name}" testScript else null;
+    if worksInNixSandbox then null else pkgs.writeShellScriptBin "check-bench-${name}" testScript;
 }
 // passthru
