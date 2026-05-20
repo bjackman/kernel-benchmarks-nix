@@ -80,15 +80,15 @@
 
         impure-tests =
           let
-            tests = lib.mapAttrsToList (name: bench: bench.impureTest) (
-              lib.filterAttrs (_: b: b.impureTest != null) self.benchmarks.${system}
-            );
+            impureBenchmarks = lib.filterAttrs (_: b: b.impureTest != null) self.benchmarks.${system};
+            tests = lib.mapAttrsToList (name: bench: bench.impureTest) impureBenchmarks;
           in
-          pkgs.writeShellScriptBin "impure-tests" ''
+          (pkgs.writeShellScriptBin "impure-tests" ''
             for t in ${builtins.concatStringsSep " " (map (t: lib.getExe t) tests)}; do
               "$t"
             done
-          '';
+          '')
+          // lib.mapAttrs (name: bench: bench.impureTest) impureBenchmarks;
       };
       # TODO: Expose generated falba parser configuration.
 
