@@ -287,13 +287,14 @@ let
       '';
       passthru = { inherit nixosConfig requiresInternet worksInNixSandbox; };
     };
+  # If it has NixOS modules then we assume it can only be tested in a VM. If
+  # needed we can also add a flag to let benchmarks explicitly mark
+  # themselves as needing a VM for other reasons (e.g. needing root).
+  forceTestInVm = builtins.length nixosModules != 0;
   testScript =
     let
-      # If it has NixOS modules then we assume it can only be run in a VM. If
-      # needed we can also add a flag to let benchmarks explicitly mark
-      # themselves as needing a VM for other reasons (e.g. needing root).
       command =
-        if builtins.length nixosModules != 0 then
+        if forceTestInVm then
           # Disable vsock since that doesn't work in the Nix sandbox.
           "${lib.getExe in-vm} --vsock-cid=-1"
         else
@@ -311,18 +312,23 @@ wrappedProg
   # it be offloaded into the flake check output. This is null if the benchmark
   # can't be run in the Nix build sandbox.
   heavyCheck =
-    if worksInNixSandbox then
+    # KVM is not available in the Nix sandbox so QEMU will fall back to TCG and
+    # be unusably slow. So in that case we just consider it impure.
+    # (You can set requiredSystemFeatures = [ "kvm" ] but this doesn't seem to
+    # work, AI says you would need to add the Nix build users to the kvm group
+    # so basically that functionality does not work.
+    if forceTestInVm then
+      null
+    else
       pkgs.runCommand "check-bench-${name}" { } ''
         export CACHE_DIRECTORY="$TMPDIR/kbn-cache"
         ${testScript}
         touch $out
-      ''
-    else
-      null;
+      '';
   # If heavyCheck was null then impureCheck can be used instead. Instead of
   # being a check (i.e. something you build, if it builds the test passed) this
   # is a binary that you run (via nix run).
   impureTest =
-    if worksInNixSandbox then null else pkgs.writeShellScriptBin "check-bench-${name}" testScript;
+    if heavyCheck == null then pkgs.writeShellScriptBin "check-bench-${name}" testScript else null;
 }
 // passthru
