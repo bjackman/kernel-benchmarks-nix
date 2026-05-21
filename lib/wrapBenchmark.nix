@@ -95,6 +95,17 @@ let
             (
               { pkgs, config, ... }:
               rec {
+                boot = {
+                  consoleLogLevel = 0;
+                  initrd.verbose = false;
+                  kernelParams = [
+                    "quiet"
+                    "udev.log_level=3"
+                    "rd.systemd.show_status=false"
+                    "rd.udev.log_level=3"
+                    "udev.log_priority=3"
+                  ];
+                };
                 networking.hostName = hostName;
                 virtualisation.vmVariant = {
                   virtualisation = {
