@@ -292,22 +292,11 @@ let
   # themselves as needing a VM for other reasons (e.g. needing root).
   forceTestInVm = builtins.length nixosModules != 0;
   testScript =
-    let
-      command =
-        if forceTestInVm then
-          # Disable vsock since that doesn't work in the Nix sandbox.
-          "${lib.getExe in-vm} --vsock-cid=-1"
-        else
-          lib.getExe wrappedProg;
-    in
-    ''
-      # Run timeout with --foreground to prevent QEMU from hanging on SIGTTIN/SIGTTOU.
-      # By default, timeout runs the command in a new (background) process group.
-      # When QEMU tries to configure standard input for the serial console, the kernel
-      # suspends it with SIGTTOU/SIGTTIN because background processes are not allowed
-      # to modify terminal settings. Running in the foreground avoids this.
-      timeout --foreground 30 ${command}
-    '';
+    if forceTestInVm then
+      # Disable vsock since that doesn't work in the Nix sandbox.
+      "${lib.getExe in-vm} --vsock-cid=-1"
+    else
+      lib.getExe wrappedProg;
 in
 wrappedProg
 // rec {
