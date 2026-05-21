@@ -1,0 +1,9 @@
+num_worktrees = 8
+
+[[tests]]
+name = "check"
+command = "timeout 300 nix flake check"
+
+[[tests]]
+name = "impure-tests"
+command = "timeout 300 nix run .#impure-tests"
