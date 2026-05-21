@@ -301,7 +301,12 @@ let
           lib.getExe wrappedProg;
     in
     ''
-      timeout 30 ${command}
+      # Run timeout with --foreground to prevent QEMU from hanging on SIGTTIN/SIGTTOU.
+      # By default, timeout runs the command in a new (background) process group.
+      # When QEMU tries to configure standard input for the serial console, the kernel
+      # suspends it with SIGTTOU/SIGTTIN because background processes are not allowed
+      # to modify terminal settings. Running in the foreground avoids this.
+      timeout --foreground 30 ${command}
     '';
 in
 wrappedProg
