@@ -288,7 +288,7 @@ let
         # a root shell which can be used to poke around in the guest for
         # debugging.
         if ! "$INTERACTIVE"; then
-          export QEMU_KERNEL_PARAMS="systemd.unit=kbn-guest.service"
+          export QEMU_KERNEL_PARAMS="systemd.unit=kbn-guest.service systemd.mask=serial-getty@ttyS0.service systemd.mask=getty@tty1.service"
         fi
 
         if [[ "$VSOCK_CID" != -1 ]]; then
