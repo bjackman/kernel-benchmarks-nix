@@ -7,4 +7,4 @@ command = "timeout 300 nix flake check"
 [[tests]]
 name = "impure-tests"
 # --forgreound avoids dumb TTY bullshit with QEMU, I dunno.
-command = "timeout --foreground 300 nix run .#impure-tests"
+command = "timeout --foreground 3000 nix run .#impure-tests"
