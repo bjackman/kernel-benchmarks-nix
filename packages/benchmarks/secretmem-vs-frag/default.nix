@@ -18,5 +18,14 @@ let
 in
 wrapBenchmark {
   inherit name rawBenchmark;
-  worksInNixSandbox = false;
+  # Running this benchmark on a big host is pretty slow, and it needs to be able
+  # to genuinely exhaust its host's memory (exhausting a cgroup is not enough),
+  # so for testing it we will just run it in a VM. We can make wrapBenchmark do
+  # that by providing a NixOS module, which we can also use to configure the
+  # size of the VM.
+  nixosModules = [
+    ({
+      virtualisation.vmVariant.virtualisation.memorySize = 1024; # MiB
+    })
+  ];
 }
