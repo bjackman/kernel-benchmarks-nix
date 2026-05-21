@@ -4,3 +4,5 @@
 /result
 /*.qcow2
 /.falba
+# Google slop
+.jetskicli/
