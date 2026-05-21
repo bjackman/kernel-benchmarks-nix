@@ -238,7 +238,7 @@ let
         EOF
         }
 
-        PARSED_ARGUMENTS=$(getopt -o i --long interactive,vsock-cid: -- "$@")
+        PARSED_ARGUMENTS=$(getopt -o io: --long interactive,vsock-cid:,out-dir: -- "$@")
 
         # shellcheck disable=SC2181
         if [ $? -ne 0 ]; then
@@ -250,6 +250,7 @@ let
 
         INTERACTIVE=false
         VSOCK_CID=3
+        OUT_DIR=""
 
         while true; do
             case "$1" in
@@ -259,6 +260,10 @@ let
                   ;;
                 --vsock-cid)
                   VSOCK_CID="$2"
+                  shift 2
+                  ;;
+                -o|--out-dir)
+                  OUT_DIR="$2"
                   shift 2
                   ;;
                 -h|--help)
@@ -290,10 +295,18 @@ let
           QEMU_OPTS="$QEMU_OPTS -device vhost-vsock-pci,guest-cid=$VSOCK_CID"
         fi
 
-        # TODO: Set this properly
-        export KBN_OUTPUT_HOST=/tmp/kbn_guest_output
+        if [ "$OUT_DIR" == "" ]; then
+          OUT_DIR="$(mktemp -d)"
+          echo "WARNING: --out-dir not set, using $OUT_DIR"
+        fi
+
+        if [ ! -d "$OUT_DIR" ] || [ ! -z "$(ls -A "$OUT_DIR")" ]; then
+          echo "--out-dir must point to an empty directory."
+          exit 1
+        fi
+
+        export KBN_OUTPUT_HOST="$OUT_DIR"
         export QEMU_OPTS
-        mkdir -p "$KBN_OUTPUT_HOST"
         ${nixosRunner}/bin/run-${hostName}-vm
       '';
       passthru = { inherit nixosConfig requiresInternet worksInNixSandbox; };
