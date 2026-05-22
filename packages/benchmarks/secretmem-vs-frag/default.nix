@@ -29,6 +29,12 @@ wrapBenchmark {
       # When running in systemd, prevent the entire service from getting
       # OOM-killed, since we want just one specific subprocess to die.
       systemd.services.kbn-guest.serviceConfig.OOMPolicy = "continue";
+
+      # Enforce compaction limits for testing memory fragmentation.
+      # We disable compaction of unevictable (locked) pages. This ensures that
+      # our fragmenter's locked pages act as absolute, unmovable barriers,
+      # preventing the kernel from resolving the fragmentation we create.
+      boot.kernel.sysctl."vm.compact_unevictable_allowed" = 0;
     })
   ];
   passthru = rec {

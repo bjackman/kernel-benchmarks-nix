@@ -1,7 +1,10 @@
 #[cfg(not(target_os = "linux"))]
 compile_error!("This benchmark only supports Linux.");
 
+mod fragmenter;
+
 use anyhow::{Context, Result, anyhow, bail};
+use fragmenter::MemoryFragmenter;
 use nix::errno::Errno;
 use nix::sys::mman::{MapFlags, ProtFlags, mmap};
 use nix::sys::resource::{Resource, getrlimit, setrlimit};
@@ -13,6 +16,9 @@ use std::os::fd::{FromRawFd, OwnedFd, RawFd};
 use std::os::unix::process::ExitStatusExt;
 use std::process::{Command, Stdio};
 use std::ptr::{self, NonNull};
+
+// libc::SYS_memfd_secret is 447 on x86_64
+const SYS_MEMFD_SECRET: libc::c_long = 447;
 
 fn set_oom_score() {
     // Set OOM score to 1000 to be first in line for OOM killer.
@@ -205,7 +211,121 @@ fn write_metric(out_dir: &str, run: usize, allocated_bytes: u64) -> Result<()> {
     Ok(())
 }
 
-fn runner(chunk_size_mib: usize, iterations: usize) -> Result<()> {
+fn write_summary(
+    out_dir: &str,
+    antagonized: bool,
+    iterations: usize,
+    chunk_size_mib: usize,
+) -> Result<()> {
+    let dir = std::path::Path::new(out_dir);
+    if !dir.exists() {
+        std::fs::create_dir_all(dir).context("Failed to create output directory")?;
+    }
+    let file_path = dir.join("secretmem_vs_frag_summary.json");
+    let mut file = std::fs::File::create(&file_path)
+        .with_context(|| format!("Failed to create summary file {:?}", file_path))?;
+
+    let json_content = format!(
+        "{{\n  \"antagonized\": {},\n  \"iterations\": {},\n  \"chunk_size_mib\": {}\n}}\n",
+        antagonized, iterations, chunk_size_mib
+    );
+
+    file.write_all(json_content.as_bytes())
+        .with_context(|| format!("Failed to write to summary file {:?}", file_path))?;
+    Ok(())
+}
+
+fn check_compact_unevictable_allowed() {
+    // We expect this option to be set by the system configuration (e.g., our NixOS VM module).
+    // Disabling compact_unevictable_allowed ensures that locked pages remain
+    // absolute, unmovable physical barriers, preventing the kernel from compacting them
+    // and resolving the fragmentation we intentionally create.
+    match std::fs::read_to_string("/proc/sys/vm/compact_unevictable_allowed") {
+        Ok(content) => {
+            if content.trim() != "0" {
+                eprintln!(
+                    "Warning: /proc/sys/vm/compact_unevictable_allowed is set to {}.\n\
+                     We expect it to be '0' so that locked pages act as permanent barriers to compaction.\n\
+                     Ensure the benchmark's NixOS module (default.nix) is correctly imported.",
+                    content.trim()
+                );
+            } else {
+                println!(
+                    "Confirmed: /proc/sys/vm/compact_unevictable_allowed is set to 0 (compaction of pinned pages disabled)."
+                );
+            }
+        }
+        Err(e) => {
+            eprintln!(
+                "Warning: Failed to read /proc/sys/vm/compact_unevictable_allowed: {}",
+                e
+            );
+        }
+    }
+}
+
+fn runner(chunk_size_mib: usize, iterations: usize, antagonize: bool) -> Result<()> {
+    let mut baseline_high_order = 0;
+
+    if antagonize {
+        check_compact_unevictable_allowed();
+
+        println!("--- Recording Baseline Memory State ---");
+        baseline_high_order = fragmenter::count_high_order_free_blocks()
+            .context("Failed to count baseline high-order blocks")?;
+        println!(
+            "Baseline free blocks of size >= 2MB: {}",
+            baseline_high_order
+        );
+        fragmenter::print_buddyinfo_summary()?;
+    }
+
+    let _fragmenter = if antagonize {
+        println!("--- Initializing Memory Antagonist (Physical Fragmentation) ---");
+        // Target 90% of free memory. 90% is highly effective and safer than 96%.
+        let frag = MemoryFragmenter::antagonize(0.9)
+            .context("Failed to antagonize memory (fragmenter failed)")?;
+
+        println!("--- Verifying Memory State after Antagonist Initialization ---");
+        let post_high_order = fragmenter::count_high_order_free_blocks()
+            .context("Failed to count post-fragmentation high-order blocks")?;
+        println!(
+            "Post-fragmentation free blocks of size >= 2MB: {}",
+            post_high_order
+        );
+        fragmenter::print_buddyinfo_summary()?;
+
+        // Verification Rules:
+        // 1. If baseline was already fully fragmented (0 blocks), we pass.
+        // 2. We expect at least an 80% reduction in high-order blocks.
+        // 3. Or, the absolute count of remaining high-order blocks must be very low (< 20 blocks).
+        if baseline_high_order > 0 {
+            let reduction =
+                (baseline_high_order as f64 - post_high_order as f64) / baseline_high_order as f64;
+            println!(
+                "Verification: High-order block reduction: {:.1}%",
+                reduction * 100.0
+            );
+
+            if reduction < 0.8 && post_high_order >= 20 {
+                bail!(
+                    "Verification Failed: High-order block reduction ({:.1}%) is less than 80% \
+                     and remaining blocks ({}) are not below absolute threshold (20). \
+                     Memory fragmentation is insufficient.",
+                    reduction * 100.0,
+                    post_high_order
+                );
+            }
+        }
+        println!(
+            "Success: Memory fragmentation successfully verified (relative reduction or absolute limit met)."
+        );
+
+        Some(frag)
+    } else {
+        None
+    };
+
     for run in 1..=iterations {
         println!("--- Run {}/{} ---", run, iterations);
         let allocated_bytes = run_once(chunk_size_mib)
@@ -220,6 +340,18 @@ fn runner(chunk_size_mib: usize, iterations: usize) -> Result<()> {
             println!("Warning: OUT_DIR not set, metric not saved to file.");
         }
     }
+
+    // Write summary once after all iterations complete successfully!
+    if let Ok(out_dir) = std::env::var("OUT_DIR") {
+        write_summary(&out_dir, antagonize, iterations, chunk_size_mib)?;
+        println!("Summary written to OUT_DIR");
+    }
+
+    if antagonize {
+        println!("--- Releasing Memory Antagonist (Restoring RAM) ---");
+        drop(_fragmenter);
+    }
+
     println!("All {} runs completed successfully.", iterations);
     Ok(())
 }
@@ -228,6 +360,7 @@ fn main() -> Result<()> {
     let mut size_mib = 128;
     let mut is_worker = false;
     let mut iterations = 5;
+    let mut antagonize = false;
 
     let args: Vec<String> = std::env::args().collect();
     let mut i = 1;
@@ -253,6 +386,10 @@ fn main() -> Result<()> {
                     i += 1;
                 }
             }
+            "--antagonize" => {
+                antagonize = true;
+                i += 1;
+            }
             _ => i += 1,
         }
     }
@@ -260,7 +397,7 @@ fn main() -> Result<()> {
     if is_worker {
         worker(size_mib)?;
     } else {
-        runner(size_mib, iterations)?;
+        runner(size_mib, iterations, antagonize)?;
     }
 
     Ok(())
