@@ -137,7 +137,7 @@ fn worker(chunk_size_mib: usize) -> Result<()> {
     }
 }
 
-fn runner(chunk_size_mib: usize) -> Result<()> {
+fn run_once(chunk_size_mib: usize) -> Result<()> {
     let mut child =
         Command::new(std::env::current_exe().context("Failed to get current executable path")?)
             .arg("--worker")
@@ -189,9 +189,20 @@ fn runner(chunk_size_mib: usize) -> Result<()> {
     }
 }
 
+fn runner(chunk_size_mib: usize, iterations: usize) -> Result<()> {
+    for run in 1..=iterations {
+        println!("--- Run {}/{} ---", run, iterations);
+        run_once(chunk_size_mib)
+            .with_context(|| format!("Failed in run {}/{}", run, iterations))?;
+    }
+    println!("All {} runs completed successfully.", iterations);
+    Ok(())
+}
+
 fn main() -> Result<()> {
     let mut size_mib = 128;
     let mut is_worker = false;
+    let mut iterations = 5;
 
     let args: Vec<String> = std::env::args().collect();
     let mut i = 1;
@@ -209,6 +220,14 @@ fn main() -> Result<()> {
                 is_worker = true;
                 i += 1;
             }
+            "--iterations" => {
+                if i + 1 < args.len() {
+                    iterations = args[i + 1].parse::<usize>().context("Invalid iterations")?;
+                    i += 2;
+                } else {
+                    i += 1;
+                }
+            }
             _ => i += 1,
         }
     }
@@ -216,7 +235,7 @@ fn main() -> Result<()> {
     if is_worker {
         worker(size_mib)?;
     } else {
-        runner(size_mib)?;
+        runner(size_mib, iterations)?;
     }
 
     Ok(())
