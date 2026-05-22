@@ -26,6 +26,9 @@ wrapBenchmark {
   nixosModules = [
     ({
       virtualisation.vmVariant.virtualisation.memorySize = 1024; # MiB
+      # When running in systemd, prevent the entire service from getting
+      # OOM-killed, since we want just one specific subprocess to die.
+      systemd.services.kbn-guest.serviceConfig.OOMPolicy = "continue";
     })
   ];
 }
