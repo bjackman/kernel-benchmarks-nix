@@ -31,4 +31,8 @@ wrapBenchmark {
       systemd.services.kbn-guest.serviceConfig.OOMPolicy = "continue";
     })
   ];
+  passthru = rec {
+    falba-parsers = import ./falba-parsers.nix;
+    falba-parsers-json = pkgs.writers.writeJSON "falba-parsers.json" falba-parsers;
+  };
 }

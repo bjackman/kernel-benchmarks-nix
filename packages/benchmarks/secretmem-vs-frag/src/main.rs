@@ -137,7 +137,7 @@ fn worker(chunk_size_mib: usize) -> Result<()> {
     }
 }
 
-fn run_once(chunk_size_mib: usize) -> Result<()> {
+fn run_once(chunk_size_mib: usize) -> Result<u64> {
     let mut child =
         Command::new(std::env::current_exe().context("Failed to get current executable path")?)
             .arg("--worker")
@@ -175,7 +175,7 @@ fn run_once(chunk_size_mib: usize) -> Result<()> {
             if last_allocated_bytes == 0 {
                 bail!("Worker allocated 0 memory before being killed.");
             }
-            return Ok(());
+            Ok(last_allocated_bytes)
         } else {
             bail!("Worker killed by unexpected signal: {}", signal);
         }
@@ -189,11 +189,36 @@ fn run_once(chunk_size_mib: usize) -> Result<()> {
     }
 }
 
+fn write_metric(out_dir: &str, run: usize, allocated_bytes: u64) -> Result<()> {
+    let dir = std::path::Path::new(out_dir);
+    if !dir.exists() {
+        std::fs::create_dir_all(dir).context("Failed to create output directory")?;
+    }
+    let file_path = dir.join(format!("secretmem_vs_frag_run_{}.json", run));
+    let mut file = std::fs::File::create(&file_path)
+        .with_context(|| format!("Failed to create metric file {:?}", file_path))?;
+
+    let json_content = format!("{{\n  \"allocated_bytes\": {}\n}}\n", allocated_bytes);
+
+    file.write_all(json_content.as_bytes())
+        .with_context(|| format!("Failed to write to metric file {:?}", file_path))?;
+    Ok(())
+}
+
 fn runner(chunk_size_mib: usize, iterations: usize) -> Result<()> {
     for run in 1..=iterations {
         println!("--- Run {}/{} ---", run, iterations);
-        run_once(chunk_size_mib)
+        let allocated_bytes = run_once(chunk_size_mib)
             .with_context(|| format!("Failed in run {}/{}", run, iterations))?;
+
+        println!("Successfully allocated {} bytes", allocated_bytes);
+
+        if let Ok(out_dir) = std::env::var("OUT_DIR") {
+            write_metric(&out_dir, run, allocated_bytes)?;
+            println!("Metric written to OUT_DIR");
+        } else {
+            println!("Warning: OUT_DIR not set, metric not saved to file.");
+        }
     }
     println!("All {} runs completed successfully.", iterations);
     Ok(())
