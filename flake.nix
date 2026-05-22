@@ -141,6 +141,8 @@
         packages = with pkgs; [
           nixos-rebuild
           falba
+          cargo
+          rustc
         ];
         FALBA_PARSERS_PATH = self.packages.${system}.falba-parsers;
       };
