@@ -1,7 +1,14 @@
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{Context, Result, anyhow, bail};
+use nix::errno::Errno;
+use nix::sys::mman::{MapFlags, ProtFlags, mmap};
+use nix::sys::resource::{Resource, getrlimit, setrlimit};
+use nix::unistd::{SysconfVar, ftruncate, sysconf};
+use std::ffi::c_void;
 use std::io::{BufRead, BufReader, Write};
+use std::num::NonZeroUsize;
+use std::os::fd::{FromRawFd, OwnedFd, RawFd};
 use std::process::{Command, Stdio};
-use std::ptr;
+use std::ptr::{self, NonNull};
 
 // libc::SYS_memfd_secret is 447 on x86_64
 #[cfg(target_arch = "x86_64")]
@@ -25,73 +32,62 @@ fn set_oom_score() {
 fn set_fd_limit() {
     // Try to increase the FD limit to the maximum allowed.
     // This is best-effort, so we ignore errors.
-    let mut rlim = libc::rlimit {
-        rlim_cur: 0,
-        rlim_max: 0,
-    };
-    if unsafe { libc::getrlimit(libc::RLIMIT_NOFILE, &mut rlim) } == 0 {
-        rlim.rlim_cur = rlim.rlim_max;
-        if unsafe { libc::setrlimit(libc::RLIMIT_NOFILE, &rlim) } != 0 {
-            eprintln!(
-                "Warning: Failed to set FD limit: {}",
-                std::io::Error::last_os_error()
-            );
+    match getrlimit(Resource::RLIMIT_NOFILE) {
+        Ok((_soft, hard)) => {
+            if let Err(e) = setrlimit(Resource::RLIMIT_NOFILE, hard, hard) {
+                eprintln!("Warning: Failed to set FD limit: {}", e);
+            }
         }
-    } else {
-        eprintln!(
-            "Warning: Failed to get FD limit: {}",
-            std::io::Error::last_os_error()
-        );
+        Err(e) => {
+            eprintln!("Warning: Failed to get FD limit: {}", e);
+        }
     }
 }
 
-fn allocate_secret_chunk(chunk_size: usize) -> Result<(i32, *mut libc::c_void)> {
+fn memfd_secret() -> nix::Result<OwnedFd> {
     let fd = unsafe { libc::syscall(SYS_MEMFD_SECRET, 0) };
     if fd < 0 {
-        return Err(anyhow!(
-            "memfd_secret failed: {}",
-            std::io::Error::last_os_error()
-        ));
+        return Err(Errno::last());
     }
-
-    if unsafe { libc::ftruncate(fd as i32, chunk_size as libc::off_t) } < 0 {
-        let err = std::io::Error::last_os_error();
-        unsafe {
-            libc::close(fd as i32);
-        }
-        return Err(anyhow!("ftruncate failed: {}", err));
-    }
-
-    let addr = unsafe {
-        libc::mmap(
-            ptr::null_mut(),
-            chunk_size,
-            libc::PROT_READ | libc::PROT_WRITE,
-            libc::MAP_SHARED | libc::MAP_POPULATE,
-            fd as i32,
-            0,
-        )
-    };
-
-    if addr == libc::MAP_FAILED {
-        let err = std::io::Error::last_os_error();
-        unsafe {
-            libc::close(fd as i32);
-        }
-        return Err(anyhow!("mmap failed: {}", err));
-    }
-
-    Ok((fd as i32, addr))
+    // Safe because we just created this FD and own it.
+    unsafe { Ok(OwnedFd::from_raw_fd(fd as RawFd)) }
 }
 
-fn populate_memory(addr: *mut libc::c_void, size: usize) {
+fn allocate_secret_chunk(chunk_size: usize) -> Result<(OwnedFd, NonNull<c_void>)> {
+    let fd = memfd_secret().context("memfd_secret failed")?;
+
+    let length = chunk_size as libc::off_t;
+    ftruncate(&fd, length).context("ftruncate failed")?;
+
+    let length_nz = NonZeroUsize::new(chunk_size).context("chunk_size must be non-zero")?;
+
+    let addr = unsafe {
+        mmap(
+            None,
+            length_nz,
+            ProtFlags::PROT_READ | ProtFlags::PROT_WRITE,
+            MapFlags::MAP_SHARED | MapFlags::MAP_POPULATE,
+            &fd,
+            0,
+        )
+    }
+    .context("mmap failed")?;
+
+    Ok((fd, addr))
+}
+
+fn populate_memory(addr: NonNull<c_void>, size: usize) -> Result<()> {
     // Explicitly write to each page to ensure it's backed by physical memory.
     // Use multiple threads to speed this up, similar to page_alloc_bench.
     let num_threads = std::thread::available_parallelism()
         .map(|n| n.get())
         .unwrap_or(1);
-    let page_size = unsafe { libc::sysconf(libc::_SC_PAGESIZE) as usize };
-    let chunk_ptr = addr as usize;
+
+    let page_size = sysconf(SysconfVar::PAGE_SIZE)
+        .context("Failed to get page size via sysconf")?
+        .context("PAGE_SIZE is not supported by this system")? as usize;
+
+    let chunk_ptr = addr.as_ptr() as usize;
 
     std::thread::scope(|s| {
         let chunk_per_thread = size / num_threads;
@@ -111,6 +107,7 @@ fn populate_memory(addr: *mut libc::c_void, size: usize) {
             });
         }
     });
+    Ok(())
 }
 
 fn worker(chunk_size_mib: usize) -> Result<()> {
@@ -122,10 +119,14 @@ fn worker(chunk_size_mib: usize) -> Result<()> {
     let mut chunks = Vec::new();
 
     loop {
-        let (fd, addr) = allocate_secret_chunk(chunk_size)
-            .with_context(|| format!("Allocation failed after {} MiB", total_allocated / (1024 * 1024)))?;
+        let (fd, addr) = allocate_secret_chunk(chunk_size).with_context(|| {
+            format!(
+                "Allocation failed after {} MiB",
+                total_allocated / (1024 * 1024)
+            )
+        })?;
 
-        populate_memory(addr, chunk_size);
+        populate_memory(addr, chunk_size).context("Failed to populate memory")?;
 
         total_allocated += chunk_size as u64;
         chunks.push((fd, addr));
@@ -137,15 +138,19 @@ fn worker(chunk_size_mib: usize) -> Result<()> {
 }
 
 fn runner(chunk_size_mib: usize) -> Result<()> {
-    let mut child = Command::new(std::env::current_exe().context("Failed to get current executable path")?)
-        .arg("--worker")
-        .arg("--size-mib")
-        .arg(chunk_size_mib.to_string())
-        .stdout(Stdio::piped())
-        .spawn()
-        .context("Failed to spawn worker")?;
+    let mut child =
+        Command::new(std::env::current_exe().context("Failed to get current executable path")?)
+            .arg("--worker")
+            .arg("--size-mib")
+            .arg(chunk_size_mib.to_string())
+            .stdout(Stdio::piped())
+            .spawn()
+            .context("Failed to spawn worker")?;
 
-    let stdout = child.stdout.take().context("Failed to open worker stdout")?;
+    let stdout = child
+        .stdout
+        .take()
+        .context("Failed to open worker stdout")?;
     let reader = BufReader::new(stdout);
     let mut last_allocated_bytes: u64 = 0;
 

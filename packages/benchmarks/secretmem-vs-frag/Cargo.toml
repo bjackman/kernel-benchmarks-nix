@@ -6,4 +6,6 @@ edition = "2021"
 [dependencies]
 libc = "0.2"
 anyhow = "1.0"
+nix = { version = "0.29", features = ["mman", "resource", "fs", "feature"] }
+
 

@@ -11,7 +11,7 @@ let
     pname = name;
     version = "0.1.0";
     src = ./.;
-    cargoHash = "sha256-JuZIyOUJdFfGWutZjls6HY/O6eQF2yGrNdLoU+D0LNQ=";
+    cargoHash = "sha256-Fy1LI8LVk702fElA+S1+jSWUgQV7I/Up6F5+xcqZGu4=";
 
     meta.mainProgram = name;
   };
