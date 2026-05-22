@@ -20,7 +20,8 @@ export AWS_EMF_NAMESPACE=local
 tools/devtool -y build
 
 # TODO: Hard coding a specific subtest here.
-TEST='integration_tests/performance/test_snapshot.py::test_population_latency[vmlinux-5.10.245-PCI_OFF-SF_ON-1-1024-None]'
+# To find the tests that are available: tools/devtool -y test --no-build -- --collect-only -m nonci
+TEST='integration_tests/performance/test_snapshot.py::test_population_latency[vmlinux-5.10.245-PCI_OFF-SF_OFF-1-1024-None]'
 
 # You configure the location of the output data by pointing --json-report-file
 # to where you want the report.json and it populates the parent directory of
