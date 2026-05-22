@@ -31,7 +31,8 @@ wrapBenchmark {
 }
 ```
 
-Next, add the new benchmark to the benchmarks.${system} output in `flake.nix`.
+Next, add the new benchmark to the
+benchmarks.${system} output in `flake.nix`.
 `git add` the new file, then ensure it builds by running `nix build
 .#benchmarks.x86_64-linux.$name`.
 

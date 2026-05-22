@@ -42,6 +42,18 @@
         projectRootFile = "flake.nix";
         programs.nixfmt.enable = true;
         programs.rustfmt.enable = true;
+        programs.prettier = {
+          enable = true;
+          includes = [ "*.md" ];
+        };
+        settings.formatter.prettier = {
+          options = [
+            "--print-width"
+            "80"
+            "--prose-wrap"
+            "always"
+          ];
+        };
       };
       # TODO: does it make sense to use this as a function like this? It means
       # we get to give the helper flake inputs so it can use nixosSystem. The
