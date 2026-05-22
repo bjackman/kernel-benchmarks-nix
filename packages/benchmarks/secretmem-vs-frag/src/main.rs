@@ -1,3 +1,6 @@
+#[cfg(not(target_os = "linux"))]
+compile_error!("This benchmark only supports Linux.");
+
 use anyhow::{Context, Result, anyhow, bail};
 use nix::errno::Errno;
 use nix::sys::mman::{MapFlags, ProtFlags, mmap};
@@ -7,12 +10,9 @@ use std::ffi::c_void;
 use std::io::{BufRead, BufReader, Write};
 use std::num::NonZeroUsize;
 use std::os::fd::{FromRawFd, OwnedFd, RawFd};
+use std::os::unix::process::ExitStatusExt;
 use std::process::{Command, Stdio};
 use std::ptr::{self, NonNull};
-
-// libc::SYS_memfd_secret is 447 on x86_64
-#[cfg(target_arch = "x86_64")]
-const SYS_MEMFD_SECRET: libc::c_long = 447;
 
 fn set_oom_score() {
     // Set OOM score to 1000 to be first in line for OOM killer.
@@ -45,7 +45,7 @@ fn set_fd_limit() {
 }
 
 fn memfd_secret() -> nix::Result<OwnedFd> {
-    let fd = unsafe { libc::syscall(SYS_MEMFD_SECRET, 0) };
+    let fd = unsafe { libc::syscall(libc::SYS_memfd_secret, 0) };
     if fd < 0 {
         return Err(Errno::last());
     }
@@ -164,46 +164,28 @@ fn runner(chunk_size_mib: usize) -> Result<()> {
 
     let status = child.wait().context("Failed to wait for worker")?;
 
-    #[cfg(target_family = "unix")]
-    {
-        use std::os::unix::process::ExitStatusExt;
-        if let Some(signal) = status.signal() {
-            println!(
-                "Worker killed by signal {} after allocating {} MiB",
-                signal,
-                last_allocated_bytes / (1024 * 1024)
-            );
-            if signal == 9 {
-                println!("Likely OOM killed.");
-                if last_allocated_bytes == 0 {
-                    bail!("Worker allocated 0 memory before being killed.");
-                }
-                return Ok(());
-            } else {
-                bail!("Worker killed by unexpected signal: {}", signal);
+    if let Some(signal) = status.signal() {
+        println!(
+            "Worker killed by signal {} after allocating {} MiB",
+            signal,
+            last_allocated_bytes / (1024 * 1024)
+        );
+        if signal == 9 {
+            println!("Likely OOM killed.");
+            if last_allocated_bytes == 0 {
+                bail!("Worker allocated 0 memory before being killed.");
             }
+            return Ok(());
         } else {
-            let code = status.code().unwrap_or(-1);
-            bail!(
-                "Worker failed with status {} after allocating {} MiB",
-                code,
-                last_allocated_bytes / (1024 * 1024)
-            );
+            bail!("Worker killed by unexpected signal: {}", signal);
         }
-    }
-
-    #[cfg(not(target_family = "unix"))]
-    {
-        if status.success() {
-            Ok(())
-        } else {
-            let code = status.code().unwrap_or(-1);
-            bail!(
-                "Worker failed with status {} after allocating {} MiB",
-                code,
-                last_allocated_bytes / (1024 * 1024)
-            );
-        }
+    } else {
+        let code = status.code().unwrap_or(-1);
+        bail!(
+            "Worker failed with status {} after allocating {} MiB",
+            code,
+            last_allocated_bytes / (1024 * 1024)
+        );
     }
 }
 
