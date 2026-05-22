@@ -134,6 +134,10 @@ fn runner(chunk_size_mib: usize) {
             );
             if signal == 9 {
                 println!("Likely OOM killed.");
+                if last_allocated_bytes == 0 {
+                    eprintln!("Error: Worker allocated 0 memory before being killed.");
+                    std::process::exit(1);
+                }
                 std::process::exit(0);
             } else {
                 eprintln!("Worker killed by unexpected signal: {}", signal);
