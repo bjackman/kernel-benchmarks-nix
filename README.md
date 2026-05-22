@@ -7,6 +7,37 @@ learning Nix and developing a bunch of janky scripts for benchmarking ASI.
 The goal is to pick stuff apart here to get something like that but reusable and
 comprehensible. It's not there yet.
 
+## HOWTOs
+
+### Run a benchmark in a [persistent] VM
+
+If you are developing a benhcmark that you can't test directly on you
+development machine, you can run it in a VM by appending `.in-vm` to the
+flakeref e.g. `nix run .#benchmarks.x86_64-linux.firecracker-perf-tests.in-vm`.
+
+To avoid having to boot/shutdown the VM every time, add `-- --interactive` to
+boot a VM with the benchmark's NixOS modules applied, but then just drop to a
+shell instead of immediately running the benchmark.
+
+Then run the benchmark in the VM either with:
+
+```sh
+# --no-copy works around Nix ssh-ng issues (AI says it may be possible to work
+# around this with encoding tricks in the script). %3 instead of /3 is required
+# for rsync to work.
+nix run .#run-benchprog -- --no-copy root@vsock%3 <benchmark name>
+```
+
+Alternatively you can directly execute the benchmark in the VM e.g:
+
+
+```sh
+ssh root@vsock/3 $(nix build --no-link --print-out-paths .#benchmarks.x86_64-linux.stress-ng)/bin/stress-ng
+```
+
+Both of these work without copying the benchmark into the VM because the Nix
+store is shared with the host.
+
 ## NOTES: Design
 
 I think the actual design I want here is:
