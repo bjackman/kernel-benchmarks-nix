@@ -16,6 +16,12 @@ let
     "nr_inactive_anon"
     "nr_active_file"
     "nr_inactive_file"
+    "compact_migrate_scanned"
+    "compact_free_scanned"
+    "compact_isolated"
+    "compact_stall"
+    "compact_fail"
+    "compact_success"
   ];
 
   # Helper to create a parser entry for a single vmstat metric.
