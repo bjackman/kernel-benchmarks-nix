@@ -64,7 +64,6 @@
     in
     {
       packages.${system} = rec {
-        instrument-vmstat = pkgs.callPackage ./packages/instruments/vmstat { };
         run-benchprog = pkgs.callPackage ./packages/run-benchprog {
           benchmarks = self.benchmarks.${system};
           instruments = self.instruments.${system};
