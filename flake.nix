@@ -123,6 +123,7 @@
       instruments.${system} = {
         vmstat = pkgs.callPackage ./packages/instruments/vmstat { };
         nixos = pkgs.callPackage ./packages/instruments/nixos { };
+        uname = pkgs.callPackage ./packages/instruments/uname.nix { };
       };
 
       nixosModules = {
