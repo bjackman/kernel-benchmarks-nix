@@ -9,11 +9,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1774186922,
-        "narHash": "sha256-Uws2zdJctSU+0x5N95yMHPJIVr09b6vBGzC1M96fldM=",
+        "lastModified": 1779486793,
+        "narHash": "sha256-0rsxXVlIJOc6NJcnxnW1Dd36jERshwtU5IvrYTPQmZI=",
         "owner": "bjackman",
         "repo": "falba",
-        "rev": "1f8b62a1504fed6ba3d75e7d8e6c92f3c1d46343",
+        "rev": "e7ed6e34d9669c9436469c4dbbb23b1855f8734e",
         "type": "github"
       },
       "original": {
