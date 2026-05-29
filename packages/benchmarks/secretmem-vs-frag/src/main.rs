@@ -184,12 +184,18 @@ fn run_once(chunk_size_mib: usize) -> Result<u64> {
         .context("Failed to open worker stdout")?;
     let reader = BufReader::new(stdout);
     let mut last_allocated_bytes: u64 = 0;
+    let mut last_printed_mib: u64 = 0;
+    let print_interval_mib = 128;
 
     for line in reader.lines() {
         let l = line.context("Failed to read line from worker stdout")?;
         if let Ok(bytes) = l.trim().parse::<u64>() {
             last_allocated_bytes = bytes;
-            println!("Progress: {} MiB", last_allocated_bytes / (1024 * 1024));
+            let current_mib = last_allocated_bytes / (1024 * 1024);
+            if current_mib - last_printed_mib >= print_interval_mib {
+                println!("Progress: {} MiB", current_mib);
+                last_printed_mib = current_mib;
+            }
         }
     }
 
@@ -352,7 +358,7 @@ fn runner(chunk_size_mib: usize, iterations: usize, antagonize: bool) -> Result<
 }
 
 fn main() -> Result<()> {
-    let mut size_mib = 128;
+    let mut size_mib = 2;
     let mut is_worker = false;
     let mut iterations = 5;
     let mut antagonize = false;
