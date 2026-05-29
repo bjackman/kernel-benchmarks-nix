@@ -17,7 +17,7 @@ BENCHPROG=""
 
 usage() {
     cat <<EOF
-Usage: $(basename "$0") [OPTIONS]
+Usage: $(basename "$0") [OPTIONS] [-- BENCHPROG_ARGS]
 
 Options:
   -t, --target TARGET     [Required] The target machine to connect to via SSH (e.g., user@host).
@@ -117,12 +117,6 @@ if [ "$FALBA_DB" == "" ] || [ ! -d "$FALBA_DB" ]; then
     exit 1
 fi
 
-if [ $# -ne 0 ]; then
-    echo "Error: Unexpected positional arguments: $*" >&2
-    usage
-    exit 1
-fi
-
 #
 # End stupid args boilerplate
 #
@@ -197,7 +191,7 @@ for executable in "${instr_executables[@]}"; do
 done
 
 # Run the benchprog
-do_ssh "$bench_executable" --out-dir "$remote_tmpdir"
+do_ssh "$bench_executable" --out-dir "$remote_tmpdir" -- "$@"
 
 # Handle Instrumentation Teardown
 for executable in "${instr_executables[@]}"; do

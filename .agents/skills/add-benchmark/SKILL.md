@@ -126,3 +126,14 @@ benchmark's output files (artifacts):
 After adding the parser, run `nix develop` to verify that your new metrics are
 recognized in the local environment (they will be aggregated into the path
 defined by `FALBA_PARSERS_PATH` environment variable).
+
+### Accepting arguments
+
+The benchmark can take command-line arguments. If it does, it's crucial that the
+benchmark logic captures any behavioural changes that they introduce, as falba
+facts. This helps prevent the user from accidentally comparing or aggregating
+results from dissimilar runs of the benchmark.
+
+Note that there is no special handling for testing non-default configurations of
+the benchmark, so any such configurable behaviour needs to be discussed with the
+user from this perspective.
