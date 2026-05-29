@@ -121,15 +121,42 @@ fi
 # End stupid args boilerplate
 #
 
+# SSH options to suppress host key checking and warnings, useful for transient VMs.
+SSH_OPTS=(
+    "-o" "StrictHostKeyChecking=no"
+    "-o" "UserKnownHostsFile=/dev/null"
+    "-o" "LogLevel=ERROR"
+)
+export NIX_SSHOPTS="${SSH_OPTS[*]}"
+
 do_ssh() {
     local port_args
     if [ -n "$SSH_PORT" ]; then
-        port_args="-p $SSH_PORT"
+        port_args=("-p" "$SSH_PORT")
     else
-        port_args=
+        port_args=()
     fi
-    # shellcheck disable=SC2086,SC2029
-    ssh $port_args "$SSH_TARGET" "$@"
+    # shellcheck disable=SC2029
+    ssh "${SSH_OPTS[@]}" "${port_args[@]}" "$SSH_TARGET" "$@"
+}
+
+do_scp_from() {
+    local port_args
+    if [ -n "$SSH_PORT" ]; then
+        port_args=("-P" "$SSH_PORT")
+    else
+        port_args=()
+    fi
+    scp "${SSH_OPTS[@]}" "${port_args[@]}" "$SSH_TARGET:$1" "$2"
+}
+
+do_rsync_pull() {
+    local rsync_ssh_opts=("${SSH_OPTS[@]}")
+    if [ -n "$SSH_PORT" ]; then
+        rsync_ssh_opts+=("-p" "$SSH_PORT")
+    fi
+    # shellcheck disable=SC2086
+    rsync --rsync-path="$rsync_store_path" -e "ssh ${rsync_ssh_opts[*]}" -avz "$SSH_TARGET:$1" "$2"
 }
 
 
@@ -176,7 +203,7 @@ fi
 # TODO: make this a parameterised instrument.
 collected_files_dir="$(mktemp -d)"
 for remote_file in "${COLLECT_FILES[@]}"; do
-    scp "$SSH_TARGET:$remote_file" "$collected_files_dir/" || echo "Warning: Failed to collect $remote_file" >&2
+    do_scp_from "$remote_file" "$collected_files_dir/" || echo "Warning: Failed to collect $remote_file" >&2
 done
 
 # Setup Remote Directories
@@ -198,11 +225,11 @@ for executable in "${instr_executables[@]}"; do
     subdir="$remote_instr_dir/$(basename "$executable")"
     do_ssh "KBN_INSTRUMENT_DIR=$subdir $executable --after"
 done
-rsync --rsync-path="$rsync_store_path" -avz "$SSH_TARGET:$remote_instr_dir/" "$collected_files_dir/instrumentation/"
+do_rsync_pull "$remote_instr_dir/" "$collected_files_dir/instrumentation/"
 
 # Fetch benchmark results
 local_tmpdir="${TMPDIR:-/tmp}/$(basename "$remote_tmpdir")"
-rsync --rsync-path="$rsync_store_path" -avz "$SSH_TARGET:$remote_tmpdir/" "$local_tmpdir/"
+do_rsync_pull "$remote_tmpdir/" "$local_tmpdir/"
 
 # Import everything to Falba
 # We include the instrumentation data by passing the $collected_files_dir glob
