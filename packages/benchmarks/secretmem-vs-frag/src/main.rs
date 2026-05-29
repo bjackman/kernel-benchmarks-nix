@@ -235,41 +235,10 @@ fn write_summary(
     Ok(())
 }
 
-fn check_compact_unevictable_allowed() {
-    // We expect this option to be set by the system configuration (e.g., our NixOS VM module).
-    // Disabling compact_unevictable_allowed ensures that locked pages remain
-    // absolute, unmovable physical barriers, preventing the kernel from compacting them
-    // and resolving the fragmentation we intentionally create.
-    match std::fs::read_to_string("/proc/sys/vm/compact_unevictable_allowed") {
-        Ok(content) => {
-            if content.trim() != "0" {
-                eprintln!(
-                    "Warning: /proc/sys/vm/compact_unevictable_allowed is set to {}.\n\
-                     We expect it to be '0' so that locked pages act as permanent barriers to compaction.\n\
-                     Ensure the benchmark's NixOS module (default.nix) is correctly imported.",
-                    content.trim()
-                );
-            } else {
-                println!(
-                    "Confirmed: /proc/sys/vm/compact_unevictable_allowed is set to 0 (compaction of pinned pages disabled)."
-                );
-            }
-        }
-        Err(e) => {
-            eprintln!(
-                "Warning: Failed to read /proc/sys/vm/compact_unevictable_allowed: {}",
-                e
-            );
-        }
-    }
-}
-
 fn runner(chunk_size_mib: usize, iterations: usize, antagonize: bool) -> Result<()> {
     let mut baseline_high_order = 0;
 
     if antagonize {
-        check_compact_unevictable_allowed();
-
         println!("--- Recording Baseline Memory State ---");
         baseline_high_order = fragmenter::count_high_order_free_blocks()
             .context("Failed to count baseline high-order blocks")?;

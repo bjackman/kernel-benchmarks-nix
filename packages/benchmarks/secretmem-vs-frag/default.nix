@@ -30,11 +30,19 @@ wrapBenchmark {
       # OOM-killed, since we want just one specific subprocess to die.
       systemd.services.kbn-guest.serviceConfig.OOMPolicy = "continue";
 
-      # Enforce compaction limits for testing memory fragmentation.
-      # We disable compaction of unevictable (locked) pages. This ensures that
-      # our fragmenter's locked pages act as absolute, unmovable barriers,
-      # preventing the kernel from resolving the fragmentation we create.
-      boot.kernel.sysctl."vm.compact_unevictable_allowed" = 0;
+      # Disable systemd-oomd because it kills the whole service cgroup on high
+      # memory pressure, preventing our runner from catching the worker's OOM death.
+      # We rely on the kernel OOM killer instead, which respects oom_score_adj.
+      systemd.oomd.enable = false;
+
+      # Force the benchmark to run with --antagonize to test the physical
+      # fragmentation code.
+      systemd.services.kbn-guest.script = lib.mkForce ''
+        set +e
+        export OUT_DIR=/mnt/kbn-output
+        ${lib.getExe rawBenchmark} --antagonize
+        echo $? > /run/kbn-exit-code
+      '';
     })
   ];
   passthru = rec {

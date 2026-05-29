@@ -39,26 +39,38 @@ fragmentation:
 
 ```
 Physical Memory Layout after fragmentation :
-┌───────────┬───────────┬───────────┬───────────┬───────────┐
-│ 64KB Pin  │ 64KB Free │ 64KB Pin  │ 64KB Free │ 64KB Pin  │ ... (to 90% of free RAM)
-│ (Locked)  │  (Hole)   │ (Locked)  │  (Hole)   │ (Locked)  │
-└───────────┴───────────┴───────────┴───────────┴───────────┘
+┌──────────────┬───────────┬──────────────┬───────────┬──────────────┐
+│  64KB Chunk  │ 64KB Free │  64KB Chunk  │ 64KB Free │  64KB Chunk  │ ... (to 90% of free RAM)
+│ (Allocated)  │  (Hole)   │ (Allocated)  │  (Hole)   │ (Allocated)  │
+└──────────────┴───────────┴──────────────┴───────────┴──────────────┘
 ```
 
-1.  **Sysctl Block**: We disable compaction of pinned pages in the system
-    configuration (`boot.kernel.sysctl."vm.compact_unevictable_allowed" = 0`).
-2.  **Movable Pageblock targeted Pollution**: The Runner allocates 90% of all
+1.  **Movable Pageblock targeted Pollution**: The Runner allocates 90% of all
     available free RAM in fine-grained **64KB chunks** via anonymous mmap. After
-    fauling the pages, the Runner calls `mlock()` on these pages **in-place**.
-3.  **Hole Creation**: The Runner `munmaps` every second 64KB chunk.
-4.  **Buddyinfo Verification**: The Runner parses `/proc/buddyinfo` to collect
+    faulting the pages (populating them), this memory pollutes the Movable
+    pageblocks. Crucially, this memory is **not locked** (no `mlock` is used).
+2.  **Hole Creation**: The Runner `munmaps` every second 64KB chunk, creating a
+    "Swiss Cheese" pattern of allocated and free blocks.
+3.  **Buddyinfo Verification**: The Runner parses `/proc/buddyinfo` to collect
     the baseline count of free physical blocks $\ge 2\text{MB}$ in active zones
     (`DMA32`, `Normal`). It verifies the post-fragmentation state to ensure
     either an **80% relative reduction** in huge pages has been achieved, or the
-    absolute remaining huge pages is **under 20 blocks** (under 80MB).
-5.  **Antagonized Allocation**: Once fragmentation is mathematically verified,
-    the Runner launches the Worker OOM cycle. The Worker allocates `secretmem`
-    chunks until it gets OOM-killed.
+    absolute remaining huge pages is **under 20 blocks** (under 80MB). Since the
+    remaining blocks are unlocked, they are theoretically movable by the
+    kernel's compaction mechanism, but verification ensures that fragmentation
+    is achieved immediately after layout setup.
+4.  **Antagonized Allocation**: Once fragmentation is verified, the Runner
+    launches the Worker OOM cycle. The Worker allocates `secretmem` chunks until
+    it gets OOM-killed.
+5.  **OOM Handling Isolation**: Since the runner keeps a large amount of memory
+    allocated (which is evictable but has no swap backing, acting as physical
+    eviction pressure), the system is under high memory pressure during the
+    worker run. To ensure that `systemd-oomd` (the userspace OOM daemon) does
+    not kill the entire benchmark service cgroup on memory pressure spikes, the
+    NixOS configuration disables `systemd-oomd`. This ensures that the kernel
+    OOM killer correctly targets only the worker process (which has an OOM score
+    adjustment of 1000), allowing the runner to safely survive and record the
+    benchmark results.
 
 ---
 

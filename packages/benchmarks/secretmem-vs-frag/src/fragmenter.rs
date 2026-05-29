@@ -5,38 +5,30 @@ use std::ffi::c_void;
 use std::num::NonZeroUsize;
 use std::ptr::{self, NonNull};
 
-/// Represents a single pinned physical memory block.
-/// When dropped, it automatically unlocks and unmaps the memory, freeing it back to the OS.
-struct PinnedBlock {
+/// Represents a single allocated physical memory block.
+/// When dropped, it automatically unmaps the memory, freeing it back to the OS.
+struct FragmentBlock {
     addr: NonNull<c_void>,
     size: usize,
 }
 
-impl PinnedBlock {
+impl FragmentBlock {
     fn new(size: usize) -> Result<Self> {
         let size_nz = NonZeroUsize::new(size).context("block size must be non-zero")?;
 
-        // We map anonymously WITHOUT MAP_LOCKED initially.
+        // We map anonymously.
         // This ensures the pages are allocated from the kernel's "Movable" pageblocks.
         let flags = MapFlags::MAP_PRIVATE | MapFlags::MAP_ANONYMOUS;
         let prot = ProtFlags::PROT_READ | ProtFlags::PROT_WRITE;
 
         let addr = unsafe { mmap_anonymous(None, size_nz, prot, flags) }
-            .context("mmap_anonymous failed for fragmentation pinning")?;
+            .context("mmap_anonymous failed for fragmentation allocation")?;
 
-        let block = PinnedBlock { addr, size };
+        let block = FragmentBlock { addr, size };
 
         // Populate every single page inside the block to force physical allocation
         // inside the Movable pageblocks.
         block.populate()?;
-
-        // Now lock the pages in RAM, making them unevictable (unmovable) in-place.
-        // This successfully pollutes the Movable pageblocks with unmovable pages,
-        // defeating the kernel's pageblock anti-fragmentation mechanism.
-        // Safe because it's a standard system call on our allocated memory.
-        unsafe {
-            nix::sys::mman::mlock(addr, size).context("mlock failed for fragmentation pinning")?;
-        }
 
         Ok(block)
     }
@@ -61,16 +53,13 @@ impl PinnedBlock {
     }
 }
 
-impl Drop for PinnedBlock {
+impl Drop for FragmentBlock {
     fn drop(&mut self) {
         // Safe because the memory was allocated by this struct and we own it.
         unsafe {
-            // Unlock first (best effort)
-            let _ = nix::sys::mman::munlock(self.addr, self.size);
-
             if let Err(e) = munmap(self.addr, self.size) {
                 eprintln!(
-                    "Warning: Failed to munmap pinned block at {:?}: {}",
+                    "Warning: Failed to munmap fragment block at {:?}: {}",
                     self.addr, e
                 );
             }
@@ -79,7 +68,7 @@ impl Drop for PinnedBlock {
 }
 
 pub struct MemoryFragmenter {
-    _pinned_blocks: Vec<PinnedBlock>,
+    _fragment_blocks: Vec<FragmentBlock>,
 }
 
 impl MemoryFragmenter {
@@ -108,12 +97,12 @@ impl MemoryFragmenter {
             block_size / 1024
         );
 
-        let mut allocated_blocks = Vec::with_capacity(num_target_blocks);
+        let mut fragment_blocks = Vec::with_capacity(num_target_blocks);
 
         // Phase 1: Allocate contiguous blocks (pollute Movable pageblocks)
         for i in 0..num_target_blocks {
-            match PinnedBlock::new(block_size) {
-                Ok(block) => allocated_blocks.push(block),
+            match FragmentBlock::new(block_size) {
+                Ok(block) => fragment_blocks.push(block),
                 Err(e) => {
                     println!(
                         "Warning: Allocation failed at block {}/{}: {}. Halting allocation phase.",
@@ -124,9 +113,9 @@ impl MemoryFragmenter {
             }
         }
 
-        let actual_allocated = allocated_blocks.len();
+        let actual_allocated = fragment_blocks.len();
         println!(
-            "Fragmenter: Allocated and locked {} MiB ({} blocks)",
+            "Fragmenter: Allocated {} MiB ({} blocks)",
             (actual_allocated * block_size) / (1024 * 1024),
             actual_allocated
         );
@@ -139,28 +128,28 @@ impl MemoryFragmenter {
 
         // Phase 2: Unmap every second block to create the "Swiss Cheese" pattern
         // We drop every second block from the vector, which triggers its Drop implementation.
-        let mut pinned_blocks = Vec::with_capacity(actual_allocated / 2 + 1);
-        for (i, block) in allocated_blocks.into_iter().enumerate() {
+        let mut active_fragments = Vec::with_capacity(actual_allocated / 2 + 1);
+        for (i, block) in fragment_blocks.into_iter().enumerate() {
             if i % 2 == 0 {
-                // Keep this block locked
-                pinned_blocks.push(block);
+                // Keep this block allocated
+                active_fragments.push(block);
             } else {
-                // Drop this block (implicitly calls munlock and munmap via Drop)
+                // Drop this block (implicitly calls munmap via Drop)
                 // This creates a free hole.
             }
         }
 
-        let final_pinned = pinned_blocks.len();
+        let final_fragments = active_fragments.len();
         println!(
-            "Fragmenter: Fragmentation complete. Created {} x {}KB free holes separated by {} x {}KB unmovable blocks.",
-            actual_allocated - final_pinned,
+            "Fragmenter: Fragmentation complete. Created {} x {}KB free holes separated by {} x {}KB allocated blocks.",
+            actual_allocated - final_fragments,
             block_size / 1024,
-            final_pinned,
+            final_fragments,
             block_size / 1024
         );
 
         Ok(MemoryFragmenter {
-            _pinned_blocks: pinned_blocks,
+            _fragment_blocks: active_fragments,
         })
     }
 }
