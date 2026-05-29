@@ -41,7 +41,7 @@ pkgs.testers.nixosTest {
 
     # Run the benchprog with instruments from client against target
     client.succeed("mkdir -p /root/falba-db")
-    client.succeed("run-benchprog --falba-db /root/falba-db --instruments vmstat --instruments nixos --no-copy root@target hello-world")
+    client.succeed("run-benchprog --falba-db /root/falba-db --instruments vmstat --instruments nixos --no-copy --target root@target --benchprog hello-world")
 
     # Verify the falba db entry on the client
     client.succeed("ls /root/falba-db/hello-world:*/artifacts/instrumentation/vmstat/before")

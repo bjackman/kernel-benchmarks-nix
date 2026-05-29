@@ -12,16 +12,16 @@ INSTRUMENTS=()
 SSH_PORT=22
 DO_NIX_COPY=true
 RUN_IN_VM=false
+SSH_TARGET=""
+BENCHPROG=""
 
 usage() {
     cat <<EOF
-Usage: $(basename "$0") [OPTIONS] SSH_TARGET BENCHPROG
-
-Arguments:
-  SSH_TARGET              The target machine to connect to via SSH (e.g., user@host).
-  BENCHPROG               The benchmark to run (either a built-in name from the registry or a Nix flakeref).
+Usage: $(basename "$0") [OPTIONS]
 
 Options:
+  -t, --target TARGET     [Required] The target machine to connect to via SSH (e.g., user@host).
+  -b, --benchprog BENCH   [Required] The benchmark to run (either a built-in name from the registry or a Nix flakeref).
   -d, --falba-db DIR      [Required] Path to an existing Falba database directory.
   -c, --collect FILE      Collect specified remote file into the host info directory. Can be passed multiple times.
   --instruments INSTR     Specify instruments to execute before and after the benchmark. Can be passed multiple times.
@@ -38,7 +38,7 @@ EOF
     jq -r 'keys | .[]' < "$INSTRUMENT_REGISTRY_JSON" | sed 's/^/  - /'
 }
 
-PARSED_ARGUMENTS=$(getopt -o d:c:vh --long falba-db:,collect:,instruments:,ssh-port:,no-copy,in-vm,help -- "$@")
+PARSED_ARGUMENTS=$(getopt -o d:c:vht:b: --long falba-db:,collect:,instruments:,ssh-port:,no-copy,in-vm,help,target:,benchprog: -- "$@")
 
 # shellcheck disable=SC2181
 if [ $? -ne 0 ]; then
@@ -50,6 +50,14 @@ fi
 eval set -- "$PARSED_ARGUMENTS"
 while true; do
     case "$1" in
+        -t|--target)
+            SSH_TARGET="$2"
+            shift 2
+            ;;
+        -b|--benchprog)
+            BENCHPROG="$2"
+            shift 2
+            ;;
         -d|--falba-db)
             FALBA_DB="$2"
             shift 2
@@ -91,19 +99,29 @@ while true; do
     esac
 done
 
+if [ "${SSH_TARGET:-}" == "" ]; then
+    echo "Error: --target is required." >&2
+    usage
+    exit 1
+fi
+
+if [ "${BENCHPROG:-}" == "" ]; then
+    echo "Error: --benchprog is required." >&2
+    usage
+    exit 1
+fi
+
 if [ "$FALBA_DB" == "" ] || [ ! -d "$FALBA_DB" ]; then
     echo "--falba-db must point to an existing Falba database."
     echo "If you intend to use $FALBA_DB, create that directory."
     exit 1
 fi
 
-if [ $# -ne 2 ]; then
-    echo "Usage: $0 [opts] SSH_TARGET BENCHPROG"
+if [ $# -ne 0 ]; then
+    echo "Error: Unexpected positional arguments: $*" >&2
+    usage
     exit 1
 fi
-
-SSH_TARGET="$1"
-BENCHPROG="$2"
 
 #
 # End stupid args boilerplate

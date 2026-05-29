@@ -25,7 +25,7 @@ Then run the benchmark in the VM either with:
 # --no-copy works around Nix ssh-ng issues (AI says it may be possible to work
 # around this with encoding tricks in the script). %3 instead of /3 is required
 # for rsync to work.
-nix run .#run-benchprog -- --no-copy root@vsock%3 <benchmark name>
+nix run .#run-benchprog -- --no-copy --target root@vsock%3 --benchprog <benchmark name>
 ```
 
 Alternatively you can directly execute the benchmark in the VM e.g:
