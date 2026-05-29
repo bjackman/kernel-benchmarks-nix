@@ -126,22 +126,24 @@ impl MemoryFragmenter {
             );
         }
 
-        // Phase 2: Unmap every second block to create the "Swiss Cheese" pattern
-        // We drop every second block from the vector, which triggers its Drop implementation.
-        let mut active_fragments = Vec::with_capacity(actual_allocated / 2 + 1);
+        // Phase 2: Unmap blocks to create the fragmentation pattern.
+        // We keep 1 in 4 blocks (25% density) to maximize memory headroom for the system
+        // while still ensuring no contiguous 2MB blocks can exist in the fragmented region.
+        // The maximum contiguous free space in the fragmented region will be 3 * 64KB = 192KB,
+        // which is well below the 2MB huge page threshold.
+        let mut active_fragments = Vec::with_capacity(actual_allocated / 4 + 1);
         for (i, block) in fragment_blocks.into_iter().enumerate() {
-            if i % 2 == 0 {
+            if i % 4 == 0 {
                 // Keep this block allocated
                 active_fragments.push(block);
             } else {
-                // Drop this block (implicitly calls munmap via Drop)
-                // This creates a free hole.
+                // Drop this block (implicitly calls munmap via Drop) to create a free hole.
             }
         }
 
         let final_fragments = active_fragments.len();
         println!(
-            "Fragmenter: Fragmentation complete. Created {} x {}KB free holes separated by {} x {}KB allocated blocks.",
+            "Fragmenter: Fragmentation complete. Created {} x {}KB free blocks separated by {} x {}KB allocated blocks.",
             actual_allocated - final_fragments,
             block_size / 1024,
             final_fragments,

@@ -29,7 +29,6 @@ wrapBenchmark {
       # When running in systemd, prevent the entire service from getting
       # OOM-killed, since we want just one specific subprocess to die.
       systemd.services.kbn-guest.serviceConfig.OOMPolicy = "continue";
-
       # Disable systemd-oomd because it kills the whole service cgroup on high
       # memory pressure, preventing our runner from catching the worker's OOM death.
       # We rely on the kernel OOM killer instead, which respects oom_score_adj.

@@ -35,6 +35,31 @@ fn set_oom_score() {
     }
 }
 
+fn protect_runner_oom_score(warn: bool) {
+    match std::fs::File::create("/proc/self/oom_score_adj") {
+        Ok(mut f) => {
+            if let Err(e) = f.write_all(b"-1000") {
+                if warn {
+                    eprintln!(
+                        "Warning: Failed to protect runner from OOM (failed to write to oom_score_adj): {}",
+                        e
+                    );
+                }
+            } else {
+                println!("Runner OOM protection enabled (oom_score_adj set to -1000).");
+            }
+        }
+        Err(e) => {
+            if warn {
+                eprintln!(
+                    "Warning: Failed to protect runner from OOM (failed to open oom_score_adj): {}",
+                    e
+                );
+            }
+        }
+    }
+}
+
 fn set_fd_limit() {
     // Try to increase the FD limit to the maximum allowed.
     // This is best-effort, so we ignore errors.
@@ -236,6 +261,7 @@ fn write_summary(
 }
 
 fn runner(chunk_size_mib: usize, iterations: usize, antagonize: bool) -> Result<()> {
+    protect_runner_oom_score(antagonize);
     let mut baseline_high_order = 0;
 
     if antagonize {

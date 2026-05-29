@@ -39,18 +39,24 @@ fragmentation:
 
 ```
 Physical Memory Layout after fragmentation :
-┌──────────────┬───────────┬──────────────┬───────────┬──────────────┐
-│  64KB Chunk  │ 64KB Free │  64KB Chunk  │ 64KB Free │  64KB Chunk  │ ... (to 90% of free RAM)
-│ (Allocated)  │  (Hole)   │ (Allocated)  │  (Hole)   │ (Allocated)  │
-└──────────────┴───────────┴──────────────┴───────────┴──────────────┘
+┌──────────────┬───────────────────────────────────┬──────────────┐
+│  64KB Chunk  │            192KB Free             │  64KB Chunk  │ ... (to 90% of free RAM)
+│ (Allocated)  │              (Hole)               │ (Allocated)  │
+└──────────────┴───────────────────────────────────┴──────────────┘
 ```
 
 1.  **Movable Pageblock targeted Pollution**: The Runner allocates 90% of all
     available free RAM in fine-grained **64KB chunks** via anonymous mmap. After
     faulting the pages (populating them), this memory pollutes the Movable
     pageblocks. Crucially, this memory is **not locked** (no `mlock` is used).
-2.  **Hole Creation**: The Runner `munmaps` every second 64KB chunk, creating a
-    "Swiss Cheese" pattern of allocated and free blocks.
+2.  **Hole Creation**: The Runner `munmaps` 3 out of every 4 blocks, keeping
+    only 25% of the allocated blocks. This creates a pattern where 64KB
+    allocated blocks are separated by 192KB free holes. This provides massive
+    memory headroom (~77.5% of free RAM is left free or restored), completely
+    eliminating OOM instability for system services, while still mathematically
+    guaranteeing that no contiguous 2MB blocks (huge pages) can exist in the
+    fragmented region (since the maximum free run in the fragmented region is
+    192KB < 2MB).
 3.  **Buddyinfo Verification**: The Runner parses `/proc/buddyinfo` to collect
     the baseline count of free physical blocks $\ge 2\text{MB}$ in active zones
     (`DMA32`, `Normal`). It verifies the post-fragmentation state to ensure
@@ -62,15 +68,15 @@ Physical Memory Layout after fragmentation :
 4.  **Antagonized Allocation**: Once fragmentation is verified, the Runner
     launches the Worker OOM cycle. The Worker allocates `secretmem` chunks until
     it gets OOM-killed.
-5.  **OOM Handling Isolation**: Since the runner keeps a large amount of memory
-    allocated (which is evictable but has no swap backing, acting as physical
-    eviction pressure), the system is under high memory pressure during the
-    worker run. To ensure that `systemd-oomd` (the userspace OOM daemon) does
-    not kill the entire benchmark service cgroup on memory pressure spikes, the
-    NixOS configuration disables `systemd-oomd`. This ensures that the kernel
-    OOM killer correctly targets only the worker process (which has an OOM score
-    adjustment of 1000), allowing the runner to safely survive and record the
-    benchmark results.
+5.  **OOM Handling Isolation**: Since the runner keeps a much smaller amount of
+    memory allocated (~22.5% of free RAM instead of 45%), the system has much
+    more memory headroom, preventing secondary OOM cascades on logging or
+    instruments. Additionally, to ensure that `systemd-oomd` (the userspace OOM
+    daemon) does not kill the entire benchmark service cgroup on memory pressure
+    spikes, the NixOS configuration disables `systemd-oomd`. This ensures that
+    the kernel OOM killer correctly targets only the worker process (which has
+    an OOM score adjustment of 1000), allowing the runner to safely survive and
+    record the benchmark results.
 
 ---
 
