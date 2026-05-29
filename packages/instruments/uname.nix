@@ -1,6 +1,6 @@
 { pkgs, ... }:
 pkgs.writeShellApplication {
-  name = "instrument-unmae";
+  name = "instrument-uname";
   runtimeInputs = [ pkgs.coreutils ];
   text = ''
     exec uname --kernel-release > "$KBN_INSTRUMENT_DIR"/kernel_release.txt
