@@ -91,15 +91,23 @@
 
         impure-tests =
           let
-            impureBenchmarks = lib.filterAttrs (_: b: b.impureTest != null) self.benchmarks.${system};
-            tests = lib.mapAttrsToList (name: bench: bench.impureTest) impureBenchmarks;
+            benchmarksWithImpureTests = lib.filterAttrs (
+              _: b: b ? impureTests && b.impureTests != { }
+            ) self.benchmarks.${system};
+            flattened = lib.concatMapAttrs (
+              benchName: bench:
+              lib.mapAttrs' (testCaseName: testDrv: {
+                name = "${benchName}-${testCaseName}";
+                value = testDrv;
+              }) bench.impureTests
+            ) benchmarksWithImpureTests;
+            runAll = pkgs.writeShellScriptBin "impure-tests" ''
+              for t in ${builtins.concatStringsSep " " (map (t: lib.getExe t) (lib.attrValues flattened))}; do
+                "$t"
+              done
+            '';
           in
-          (pkgs.writeShellScriptBin "impure-tests" ''
-            for t in ${builtins.concatStringsSep " " (map (t: lib.getExe t) tests)}; do
-              "$t"
-            done
-          '')
-          // lib.mapAttrs (name: bench: bench.impureTest) impureBenchmarks;
+          runAll // flattened;
       };
       # TODO: Expose generated falba parser configuration.
 
@@ -136,11 +144,26 @@
 
       checks.${system} =
         let
-          testable = self.benchmarks.${system} // self.instruments.${system};
+          # Collect and flatten checks from benchmarks
+          benchmarkChecks = lib.concatMapAttrs (
+            benchName: bench:
+            if bench ? checks then
+              lib.mapAttrs' (testCaseName: testDrv: {
+                name = "${benchName}-${testCaseName}";
+                value = testDrv;
+              }) bench.checks
+            else
+              { }
+          ) self.benchmarks.${system};
+
+          # Collect heavyCheck from instruments
+          instrumentChecks = lib.concatMapAttrs (
+            instName: inst:
+            if inst ? heavyCheck && inst.heavyCheck != null then { "${instName}" = inst.heavyCheck; } else { }
+          ) self.instruments.${system};
         in
-        lib.mapAttrs (name: drv: drv.heavyCheck) (
-          lib.filterAttrs (_: b: b ? heavyCheck && b.heavyCheck != null) testable
-        )
+        benchmarkChecks
+        // instrumentChecks
         // {
           run-benchprog-integration = pkgs.callPackage ./packages/run-benchprog/integration-test.nix {
             inherit (self.packages.${system}) run-benchprog;
