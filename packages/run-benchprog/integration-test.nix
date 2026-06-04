@@ -16,6 +16,9 @@ pkgs.testers.nixosTest {
       { pkgs, ... }:
       {
         environment.systemPackages = [ run-benchprog ];
+        # Try to break the test isntead of falling back to TCG which is horribly
+        # slow.
+        virtualisation.qemu.options = [ "-machine accel=kvm" ];
       };
 
     target =
@@ -23,6 +26,7 @@ pkgs.testers.nixosTest {
       {
         services.openssh.enable = true;
         services.openssh.settings.PermitRootLogin = "yes";
+        virtualisation.qemu.options = [ "-machine accel=kvm" ];
       };
   };
 
