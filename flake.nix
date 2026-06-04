@@ -96,24 +96,16 @@
 
         impure-tests =
           let
-            benchmarksWithImpureTests = lib.filterAttrs (
-              _: b: b ? impureTests && b.impureTests != { }
-            ) self.benchmarks.${system};
-            flattened = lib.concatMapAttrs (
-              benchName: bench:
-              lib.mapAttrs' (testCaseName: testDrv: {
-                name = "${benchName}-${testCaseName}";
-                value = testDrv;
-              }) bench.impureTests
-            ) benchmarksWithImpureTests;
+            impureBenchmarks = lib.filterAttrs (_: b: b.impureTest != null) self.benchmarks.${system};
+            tests = lib.mapAttrsToList (name: bench: bench.impureTest) impureBenchmarks;
             runAll = pkgs.writeShellScriptBin "impure-tests" ''
-              for t in ${builtins.concatStringsSep " " (map (t: lib.getExe t) (lib.attrValues flattened))}; do
+              for t in ${builtins.concatStringsSep " " (map (t: lib.getExe t) tests)}; do
                 "$t"
               done
               "${lib.getExe self.packages.${system}.run-benchprog-integration-test}"
             '';
           in
-          runAll // flattened;
+          runAll // lib.mapAttrs (name: bench: bench.impureTest) impureBenchmarks;
       };
       # TODO: Expose generated falba parser configuration.
 
@@ -150,26 +142,11 @@
 
       checks.${system} =
         let
-          # Collect and flatten checks from benchmarks
-          benchmarkChecks = lib.concatMapAttrs (
-            benchName: bench:
-            if bench ? checks then
-              lib.mapAttrs' (testCaseName: testDrv: {
-                name = "${benchName}-${testCaseName}";
-                value = testDrv;
-              }) bench.checks
-            else
-              { }
-          ) self.benchmarks.${system};
-
-          # Collect heavyCheck from instruments
-          instrumentChecks = lib.concatMapAttrs (
-            instName: inst:
-            if inst ? heavyCheck && inst.heavyCheck != null then { "${instName}" = inst.heavyCheck; } else { }
-          ) self.instruments.${system};
+          testable = self.benchmarks.${system} // self.instruments.${system};
         in
-        benchmarkChecks
-        // instrumentChecks
+        lib.mapAttrs (name: drv: drv.heavyCheck) (
+          lib.filterAttrs (_: b: b ? heavyCheck && b.heavyCheck != null) testable
+        )
         // {
           formatting = treefmtConfig.config.build.check self;
         };
