@@ -2,7 +2,7 @@ num_worktrees = 8
 
 [[tests]]
 name = "check"
-command = "timeout 300 nix flake check"
+command = "timeout 300 nix flake check -L"
 
 [[tests]]
 name = "impure-tests"
