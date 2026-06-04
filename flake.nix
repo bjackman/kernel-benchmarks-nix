@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs?ref=25.11";
+    nixpkgs.url = "github:nixos/nixpkgs?ref=26.05";
     firecracker = {
       # Based on upstream branch feature/secret-hiding. Adds a bugfix from me.
       url = "github:bjackman/firecracker?ref=skip-if";
