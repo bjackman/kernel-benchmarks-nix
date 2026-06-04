@@ -379,6 +379,9 @@ fn main() -> Result<()> {
                 is_worker = true;
                 i += 1;
             }
+            // TODO: This flag is dumb, we should not have iterations inside the
+            // benchmark here unless we have a way to communicate back out to
+            // falba about restarts of the benchmark.
             "--iterations" => {
                 if i + 1 < args.len() {
                     iterations = args[i + 1].parse::<usize>().context("Invalid iterations")?;

@@ -18,4 +18,13 @@
       type = "bool";
     };
   };
+  parsers.secretmem_iterations = {
+    type = "jsonpath";
+    artifact_regexp = "secretmem_vs_frag_summary\\.json";
+    jsonpath = "$.iterations";
+    fact = {
+      name = "secretmem_iterations";
+      type = "int";
+    };
+  };
 }
