@@ -8,7 +8,9 @@ set -eu -o pipefail
 
 FALBA_DB=.falba
 COLLECT_FILES=()
-INSTRUMENTS=()
+DEFAULT_INSTRUMENTS=("nixos" "uname")
+REQUESTED_INSTRUMENTS=()
+DISABLED_INSTRUMENTS=()
 SSH_PORT=22
 DO_NIX_COPY=true
 RUN_IN_VM=false
@@ -25,6 +27,8 @@ Options:
   -d, --falba-db DIR      [Required] Path to an existing Falba database directory.
   -c, --collect FILE      Collect specified remote file into the host info directory. Can be passed multiple times.
   --instruments INSTR     Specify instruments to execute before and after the benchmark. Can be passed multiple times.
+                          Default instruments: nixos, uname.
+  --disable-instrument INS Disable an instrument. Can be passed multiple times.
   --ssh-port PORT         Specify the SSH port to use.
   --no-copy               Skip executing 'nix copy' to push packages to the target.
   -v, --in-vm             Run the benchmark inside a VM (only supported for built-in benchmarks in the registry).
@@ -38,7 +42,7 @@ EOF
     jq -r 'keys | .[]' < "$INSTRUMENT_REGISTRY_JSON" | sed 's/^/  - /'
 }
 
-PARSED_ARGUMENTS=$(getopt -o d:c:vht:b: --long falba-db:,collect:,instruments:,ssh-port:,no-copy,in-vm,help,target:,benchprog: -- "$@")
+PARSED_ARGUMENTS=$(getopt -o d:c:vht:b: --long falba-db:,collect:,instruments:,disable-instrument:,ssh-port:,no-copy,in-vm,help,target:,benchprog: -- "$@")
 
 # shellcheck disable=SC2181
 if [ $? -ne 0 ]; then
@@ -68,7 +72,11 @@ while true; do
             shift 2
             ;;
         --instruments)
-            INSTRUMENTS+=("$2")
+            REQUESTED_INSTRUMENTS+=("$2")
+            shift 2
+            ;;
+        --disable-instrument)
+            DISABLED_INSTRUMENTS+=("$2")
             shift 2
             ;;
         # TODO: Figure out a less shitty way to configure SSH.
@@ -120,6 +128,32 @@ fi
 #
 # End stupid args boilerplate
 #
+
+# Resolve instruments: default + requested - disabled
+INSTRUMENTS=()
+for inst in "${DEFAULT_INSTRUMENTS[@]}" "${REQUESTED_INSTRUMENTS[@]}"; do
+    # Check if it is disabled
+    disabled=false
+    for dis in "${DISABLED_INSTRUMENTS[@]}"; do
+        if [[ "$inst" == "$dis" ]]; then
+            disabled=true
+            break
+        fi
+    done
+    if ! $disabled; then
+        # Avoid duplicates
+        duplicate=false
+        for added in "${INSTRUMENTS[@]}"; do
+            if [[ "$inst" == "$added" ]]; then
+                duplicate=true
+                break
+            fi
+        done
+        if ! $duplicate; then
+            INSTRUMENTS+=("$inst")
+        fi
+    fi
+done
 
 # SSH options to suppress host key checking and warnings, useful for transient VMs.
 SSH_OPTS=(
