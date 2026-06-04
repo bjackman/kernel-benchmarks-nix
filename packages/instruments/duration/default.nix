@@ -12,7 +12,7 @@ let
         type = "single_metric";
         artifact_regexp = "instrumentation/duration/duration.txt";
         metric = {
-          name = "duration_us";
+          name = "duration";
           type = "int";
           unit = "us";
         };
