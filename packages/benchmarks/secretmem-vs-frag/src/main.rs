@@ -360,7 +360,7 @@ fn runner(chunk_size_mib: usize, iterations: usize, antagonize: bool) -> Result<
 fn main() -> Result<()> {
     let mut size_mib = 2;
     let mut is_worker = false;
-    let mut iterations = 5;
+    let mut iterations = 1;
     let mut antagonize = false;
 
     let args: Vec<String> = std::env::args().collect();
