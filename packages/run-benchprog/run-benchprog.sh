@@ -126,6 +126,7 @@ SSH_OPTS=(
     "-o" "StrictHostKeyChecking=no"
     "-o" "UserKnownHostsFile=/dev/null"
     "-o" "LogLevel=ERROR"
+    "-o" "BatchMode=yes"
 )
 export NIX_SSHOPTS="${SSH_OPTS[*]}"
 

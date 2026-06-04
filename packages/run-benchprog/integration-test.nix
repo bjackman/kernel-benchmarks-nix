@@ -1,51 +1,98 @@
+# Slop-coded integration test. This used to be a NixOS test but it turns out that
+# running this in the Nix build sandbox on non-NixOS is broken, it requires
+# /dev/kvm to be world-readable or it falls back to TCG which is unusably slow.
 {
   pkgs,
+  lib,
   run-benchprog,
+  hello-world-in-vm,
   ...
 }:
-# Tip: to debug this, run nix run
-# .#checks.x86_64-linux.run-benchprog-integration.driverInteractive which will
-# drop you in a Python REPL. You can then run the Python code below. You can
-# then run client.shell_interact() to get a shell on the client machine for
-# example.
-pkgs.testers.nixosTest {
-  name = "run-benchprog-integration";
+pkgs.writeShellApplication {
+  name = "run-benchprog-integration-test";
+  runtimeInputs = with pkgs; [
+    netcat-openbsd
+    python3 # for dynamic port allocation
+  ];
+  text = ''
+    set -eu -o pipefail
 
-  nodes = {
-    client =
-      { pkgs, ... }:
-      {
-        environment.systemPackages = [ run-benchprog ];
-      };
+    TMP_DIR=$(mktemp -d)
+    VM_PID=""
+    SUCCESS=false
 
-    target =
-      { pkgs, ... }:
-      {
-        services.openssh.enable = true;
-        services.openssh.settings.PermitRootLogin = "yes";
-      };
-  };
+    cleanup() {
+        echo "Cleaning up..."
+        if [ -n "$VM_PID" ]; then
+            echo "Killing VM (PID $VM_PID)..."
+            kill "$VM_PID" || true
+            wait "$VM_PID" 2>/dev/null || true
+        fi
+        if ! "$SUCCESS" && [ -f "$TMP_DIR/vm.log" ]; then
+            echo "--- VM Log ---"
+            cat "$TMP_DIR/vm.log"
+            echo "--------------"
+        fi
+        rm -rf "$TMP_DIR"
+    }
+    trap cleanup EXIT
 
-  testScript = ''
-    start_all()
-    target.wait_for_unit("sshd.service")
-    target.wait_for_open_port(22)
+    # Find a free port on host
+    PORT=$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1]); s.close()')
+    echo "Using host port $PORT for SSH forwarding"
 
-    # Setup SSH keys
-    client.succeed("ssh-keygen -t ed25519 -N \"\" -f /root/.ssh/id_ed25519")
-    key = client.succeed("cat /root/.ssh/id_ed25519.pub").strip()
-    target.succeed(f"mkdir -p /root/.ssh && echo '{key}' > /root/.ssh/authorized_keys && chmod 600 /root/.ssh/authorized_keys")
+    # Start VM.
+    export KBN_OUTPUT_HOST="$TMP_DIR"
 
-    # Accept host key
-    client.succeed("ssh -o StrictHostKeyChecking=accept-new root@target echo ok")
+    echo "Starting target VM..."
+    (
+        cd "$TMP_DIR"
+        export QEMU_NET_OPTS="hostfwd=tcp:127.0.0.1:$PORT-:22"
+        ${lib.getExe hello-world-in-vm} --interactive --vsock-cid=-1 > vm.log 2>&1 &
+        echo $! > vm.pid
+    )
+    VM_PID=$(cat "$TMP_DIR/vm.pid")
 
-    # Run the benchprog with instruments from client against target
-    client.succeed("mkdir -p /root/falba-db")
-    client.succeed("run-benchprog --falba-db /root/falba-db --instruments vmstat --instruments nixos --no-copy --target root@target --benchprog hello-world")
+    echo "Waiting for target VM SSH to be ready on port $PORT..."
+    timeout=60
+    while ! nc -z 127.0.0.1 "$PORT"; do
+        sleep 1
+        timeout=$((timeout - 1))
+        if [ $timeout -le 0 ]; then
+            echo "Timed out waiting for VM to boot"
+            exit 1
+        fi
+    done
+    echo "Target VM SSH is ready."
 
-    # Verify the falba db entry on the client
-    client.succeed("ls /root/falba-db/hello-world:*/artifacts/instrumentation/vmstat/before")
-    client.succeed("ls /root/falba-db/hello-world:*/artifacts/instrumentation/vmstat/after")
-    client.succeed("ls /root/falba-db/hello-world:*/artifacts/instrumentation/nixos/nixos-version.json")
+    mkdir -p "$TMP_DIR/falba-db"
+
+    echo "Running run-benchprog..."
+    ${lib.getExe run-benchprog} \
+        --falba-db "$TMP_DIR/falba-db" \
+        --instruments vmstat \
+        --instruments nixos \
+        --no-copy \
+        --target root@127.0.0.1 \
+        --ssh-port "$PORT" \
+        --benchprog hello-world
+
+    # Verify results
+    echo "Verifying results..."
+    if ! ls "$TMP_DIR"/falba-db/hello-world:*/artifacts/instrumentation/vmstat/before >/dev/null 2>&1; then
+        echo "Verification failed: vmstat before artifact missing"
+        exit 1
+    fi
+    if ! ls "$TMP_DIR"/falba-db/hello-world:*/artifacts/instrumentation/vmstat/after >/dev/null 2>&1; then
+        echo "Verification failed: vmstat after artifact missing"
+        exit 1
+    fi
+    if ! ls "$TMP_DIR"/falba-db/hello-world:*/artifacts/instrumentation/nixos/nixos-version.json >/dev/null 2>&1; then
+        echo "Verification failed: nixos-version.json missing"
+        exit 1
+    fi
+
+    SUCCESS=true
+    echo "Integration test passed successfully!"
   '';
 }

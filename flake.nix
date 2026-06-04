@@ -69,6 +69,11 @@
           instruments = self.instruments.${system};
         };
 
+        run-benchprog-integration-test = pkgs.callPackage ./packages/run-benchprog/integration-test.nix {
+          inherit (self.packages.${system}) run-benchprog;
+          hello-world-in-vm = self.benchmarks.${system}.hello-world.in-vm;
+        };
+
         falba-parsers =
           let
             # Collect all benchmarks and instruments that have a falba-parsers-json passthru.
@@ -105,6 +110,7 @@
               for t in ${builtins.concatStringsSep " " (map (t: lib.getExe t) (lib.attrValues flattened))}; do
                 "$t"
               done
+              "${lib.getExe self.packages.${system}.run-benchprog-integration-test}"
             '';
           in
           runAll // flattened;
@@ -165,9 +171,6 @@
         benchmarkChecks
         // instrumentChecks
         // {
-          run-benchprog-integration = pkgs.callPackage ./packages/run-benchprog/integration-test.nix {
-            inherit (self.packages.${system}) run-benchprog;
-          };
           formatting = treefmtConfig.config.build.check self;
         };
 
