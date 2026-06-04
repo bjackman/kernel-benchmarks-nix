@@ -123,6 +123,7 @@
             };
         in
         {
+          compile-kernel = makeBenchprog ./packages/benchmarks/compile-kernel;
           firecracker-perf-tests = makeBenchprog ./packages/benchmarks/firecracker-perf-tests;
           hello-world = makeBenchprog ./packages/benchmarks/hello-world.nix;
           hugepages-alloc = makeBenchprog ./packages/benchmarks/hugepages-alloc;
