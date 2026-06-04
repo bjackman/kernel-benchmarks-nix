@@ -122,6 +122,7 @@
         {
           firecracker-perf-tests = makeBenchprog ./packages/benchmarks/firecracker-perf-tests;
           hello-world = makeBenchprog ./packages/benchmarks/hello-world.nix;
+          hugepages-alloc = makeBenchprog ./packages/benchmarks/hugepages-alloc;
           secretmem-vs-frag = makeBenchprog ./packages/benchmarks/secretmem-vs-frag;
           stress-ng = makeBenchprog ./packages/benchmarks/stress-ng;
         };

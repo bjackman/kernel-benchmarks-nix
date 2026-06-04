@@ -14,7 +14,8 @@
   # Modules that are required for the host the benchprog is running in.
   nixosModules ? [ ],
   requiresInternet ? false,
-  worksInNixSandbox ? !requiresInternet,
+  requiresRoot ? false,
+  worksInNixSandbox ? (!requiresInternet && !requiresRoot),
 }:
 let
   wrappedProg = pkgs.writeShellApplication {
@@ -42,7 +43,7 @@ let
   # If it has NixOS modules then we assume it can only be tested in a VM. If
   # needed we can also add a flag to let benchmarks explicitly mark
   # themselves as needing a VM for other reasons (e.g. needing root).
-  forceTestInVm = builtins.length nixosModules != 0;
+  forceTestInVm = requiresRoot || builtins.length nixosModules != 0;
   testScript =
     if forceTestInVm then
       # Disable vsock since that doesn't work in the Nix sandbox.
