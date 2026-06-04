@@ -127,6 +127,7 @@
         };
 
       instruments.${system} = {
+        duration = pkgs.callPackage ./packages/instruments/duration { };
         vmstat = pkgs.callPackage ./packages/instruments/vmstat { };
         nixos = pkgs.callPackage ./packages/instruments/nixos { };
         uname = pkgs.callPackage ./packages/instruments/uname.nix { };

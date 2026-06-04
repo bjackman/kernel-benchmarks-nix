@@ -8,7 +8,7 @@ set -eu -o pipefail
 
 FALBA_DB=.falba
 COLLECT_FILES=()
-DEFAULT_INSTRUMENTS=("nixos" "uname")
+DEFAULT_INSTRUMENTS=("nixos" "uname" "duration")
 REQUESTED_INSTRUMENTS=()
 DISABLED_INSTRUMENTS=()
 SSH_PORT=22

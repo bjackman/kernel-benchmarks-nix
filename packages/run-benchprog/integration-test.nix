@@ -84,6 +84,10 @@ pkgs.writeShellApplication {
         echo "Verification failed: kernel_release.txt missing"
         exit 1
     fi
+    if ! ls "$TMP_DIR"/falba-db-default/hello-world:*/artifacts/instrumentation/duration/duration.txt >/dev/null 2>&1; then
+        echo "Verification failed: duration.txt missing"
+        exit 1
+    fi
     if ls -d "$TMP_DIR"/falba-db-default/hello-world:*/artifacts/instrumentation/vmstat >/dev/null 2>&1; then
         echo "Verification failed: vmstat should not have run"
         exit 1
@@ -117,6 +121,7 @@ pkgs.writeShellApplication {
         --falba-db "$TMP_DIR/falba-db-disable-all" \
         --disable-instrument nixos \
         --disable-instrument uname \
+        --disable-instrument duration \
         --instruments vmstat \
         --no-copy \
         --target root@127.0.0.1 \
@@ -138,6 +143,10 @@ pkgs.writeShellApplication {
     fi
     if ls -d "$TMP_DIR"/falba-db-disable-all/hello-world:*/artifacts/instrumentation/instrument-uname >/dev/null 2>&1; then
         echo "Verification failed: uname should not have run"
+        exit 1
+    fi
+    if ls -d "$TMP_DIR"/falba-db-disable-all/hello-world:*/artifacts/instrumentation/duration >/dev/null 2>&1; then
+        echo "Verification failed: duration should not have run"
         exit 1
     fi
 
