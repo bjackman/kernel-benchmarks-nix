@@ -49,7 +49,7 @@ BASE_CACHE="${CACHE_DIRECTORY:-${XDG_CACHE_HOME:-${HOME:+$HOME/.cache}}}"
 export KBN_CACHE_DIR="$BASE_CACHE/kbn/$KBN_BENCH_NAME"
 mkdir -p "$KBN_CACHE_DIR"
 if "$KBN_USE_SUDO"; then
-    exec sudo "$KBN_RAW_BENCH_EXE" "$@"
+    exec sudo OUT_DIR="$OUT_DIR" KBN_CACHE_DIR="$KBN_CACHE_DIR" "$KBN_RAW_BENCH_EXE" "$@"
 else
     exec "$KBN_RAW_BENCH_EXE" "$@"
 fi
