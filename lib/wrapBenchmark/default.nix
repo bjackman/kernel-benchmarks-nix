@@ -22,16 +22,13 @@
 let
   wrappedProg = pkgs.writeShellApplication {
     name = "${name}";
-    runtimeInputs = with pkgs; [
-      getopt
-      sudo
-    ];
+    runtimeInputs = with pkgs; [ getopt ];
     runtimeEnv = {
       KBN_BENCH_NAME = name;
       KBN_RAW_BENCH_EXE = lib.getExe rawBenchmark;
-      # Just use sudo unconditionally if we need root, assume sudoing is
-      # harmless if already root. Might want to change this if we want to run on
-      # weird platforms one day.
+      # Just use the platform's sudo unconditionally if we need root, assume
+      # sudoing is harmless if already root. Might want to change this if we
+      # want to run on weird platforms one day.
       KBN_USE_SUDO = lib.boolToString requiresRoot;
     };
     text = builtins.readFile ./wrapper.sh;
