@@ -31,11 +31,7 @@
       system = "x86_64-linux";
       pkgs = import nixpkgs {
         inherit system;
-        overlays = [
-          (final: prev: {
-            falba = inputs.falba.packages.${system}.default;
-          })
-        ];
+        overlays = [ self.overlays.default ];
       };
       lib = pkgs.lib;
       treefmtConfig = treefmt-nix.lib.evalModule pkgs {
@@ -108,6 +104,13 @@
           runAll // lib.mapAttrs (name: bench: bench.impureTest) impureBenchmarks;
       };
       # TODO: Expose generated falba parser configuration.
+
+      overlays.default = (
+        final: prev: {
+          falba = inputs.falba.packages.${prev.stdenv.hostPlatform.system}.default;
+          run-benchprog = self.packages.${prev.stdenv.hostPlatform.system}.run-benchprog;
+        }
+      );
 
       benchmarks.${system} =
         # Pretty sure this is dumb and there's a neater way to do this.
