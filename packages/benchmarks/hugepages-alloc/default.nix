@@ -43,18 +43,19 @@ let
             ALLOCATED=$(cat "$HUGEPAGES_FILE")
             echo "Allocated hugepages: $ALLOCATED"
 
-            if [ -n "''${OUT_DIR:-}" ]; then
-                mkdir -p "$OUT_DIR"
-                cat <<EOF > "$OUT_DIR/hugepages_alloc_summary.json"
+            if [ -z "''${OUT_DIR:-}" ]; then
+                echo "Error: OUT_DIR is not set" >&2
+                exit 1
+            fi
+
+            mkdir -p "$OUT_DIR"
+            cat <<EOF > "$OUT_DIR/hugepages_alloc_summary.json"
       {
         "requested_hugepages": $NR_HUGEPAGES,
         "allocated_hugepages": $ALLOCATED
       }
       EOF
-                echo "Summary written to $OUT_DIR/hugepages_alloc_summary.json"
-            else
-                echo "Warning: OUT_DIR not set, not writing summary JSON"
-            fi
+            echo "Summary written to $OUT_DIR/hugepages_alloc_summary.json"
     '';
   };
 in
