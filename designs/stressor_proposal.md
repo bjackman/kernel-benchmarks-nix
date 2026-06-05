@@ -63,6 +63,7 @@ pkgs.writeShellApplication {
       fact = {
         name = "stressed_secretmem";
         type = "bool";
+        default = "false";
       };
     };
     falba-parsers-json = pkgs.writers.writeJSON "falba-parsers.json" {

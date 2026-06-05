@@ -63,6 +63,7 @@
         run-benchprog = pkgs.callPackage ./packages/run-benchprog {
           benchmarks = self.benchmarks.${system};
           instruments = self.instruments.${system};
+          stressors = self.stressors.${system};
         };
 
         run-benchprog-integration-test = pkgs.callPackage ./packages/run-benchprog/integration-test.nix {
@@ -72,9 +73,8 @@
 
         falba-parsers =
           let
-            # Collect all benchmarks and instruments that have a falba-parsers-json passthru.
             allProviders = lib.filterAttrs (_: p: p ? falba-parsers-json) (
-              self.benchmarks.${system} // self.instruments.${system}
+              self.benchmarks.${system} // self.instruments.${system} // self.stressors.${system}
             );
             # Map them to their parser JSON files, naming each file <name>.json.
             parserFiles = lib.mapAttrsToList (
@@ -138,6 +138,10 @@
         uname = pkgs.callPackage ./packages/instruments/uname.nix { };
       };
 
+      stressors.${system} = {
+        secretmem = pkgs.callPackage ./packages/stressors/secretmem { };
+      };
+
       nixosModules = {
         default = import ./modules/benchprog-support.nix;
         benchmarks.firecracker-perf-tests = import ./packages/benchmarks/firecracker-perf-tests/module.nix;
@@ -148,7 +152,7 @@
 
       checks.${system} =
         let
-          testable = self.benchmarks.${system} // self.instruments.${system};
+          testable = self.benchmarks.${system} // self.instruments.${system} // self.stressors.${system};
         in
         lib.mapAttrs (name: drv: drv.heavyCheck) (
           lib.filterAttrs (_: b: b ? heavyCheck && b.heavyCheck != null) testable

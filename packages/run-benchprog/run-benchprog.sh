@@ -16,6 +16,7 @@ DO_NIX_COPY=true
 RUN_IN_VM=false
 SSH_TARGET=""
 BENCHPROG=""
+STRESSOR=""
 
 usage() {
     cat <<EOF
@@ -32,6 +33,7 @@ Options:
   --ssh-port PORT         Specify the SSH port to use.
   --no-copy               Skip executing 'nix copy' to push packages to the target.
   -v, --in-vm             Run the benchmark inside a VM (only supported for built-in benchmarks in the registry).
+  --stressor STRESSOR     Specify a stressor to run in parallel with the benchmark.
   -h, --help              Display this help message and exit.
 
 EOF
@@ -40,9 +42,11 @@ EOF
     jq -r 'keys | .[]' < "$BENCHMARK_REGISTRY_JSON" | sed 's/^/  - /'
     echo -e "\nBuilt-in instruments:\n  "
     jq -r 'keys | .[]' < "$INSTRUMENT_REGISTRY_JSON" | sed 's/^/  - /'
+    echo -e "\nBuilt-in stressors:\n  "
+    jq -r 'keys | .[]' < "$STRESSOR_REGISTRY_JSON" | sed 's/^/  - /'
 }
 
-PARSED_ARGUMENTS=$(getopt -o d:c:vht:b: --long falba-db:,collect:,instruments:,disable-instrument:,ssh-port:,no-copy,in-vm,help,target:,benchprog: -- "$@")
+PARSED_ARGUMENTS=$(getopt -o d:c:vht:b: --long falba-db:,collect:,instruments:,disable-instrument:,ssh-port:,no-copy,in-vm,help,target:,benchprog:,stressor: -- "$@")
 
 # shellcheck disable=SC2181
 if [ $? -ne 0 ]; then
@@ -96,6 +100,10 @@ while true; do
             usage
             exit 0
             ;;
+        --stressor)
+            STRESSOR="$2"
+            shift 2
+            ;;
         --)
             shift
             break
@@ -123,6 +131,14 @@ if [ "$FALBA_DB" == "" ] || [ ! -d "$FALBA_DB" ]; then
     echo "--falba-db must point to an existing Falba database."
     echo "If you intend to use $FALBA_DB, create that directory."
     exit 1
+fi
+
+if [ -n "$STRESSOR" ]; then
+    stressor_executable="$(jq -r ".[\"$STRESSOR\"]" < "$STRESSOR_REGISTRY_JSON")"
+    if [ "$stressor_executable" = "null" ] || [ -z "$stressor_executable" ]; then
+        echo "Error: Unknown stressor $STRESSOR" >&2
+        exit 1
+    fi
 fi
 
 #
@@ -221,6 +237,9 @@ fi
 
 rsync_store_path="$(realpath "$(which rsync)")"
 to_install=("$bench_executable" "$rsync_store_path")
+if [ -n "$STRESSOR" ]; then
+    to_install+=("$stressor_executable")
+fi
 instr_executables=()
 for instr in "${INSTRUMENTS[@]}"; do
     executable=$(jq -er ".[\"$instr\"]" < "$INSTRUMENT_REGISTRY_JSON")
@@ -244,6 +263,13 @@ done
 # Setup Remote Directories
 remote_tmpdir=$(do_ssh mktemp -d)
 
+remote_stressor_dir=""
+if [ -n "$STRESSOR" ]; then
+    remote_stressor_dir=$(do_ssh mktemp -d)
+    echo "Starting stressor $STRESSOR..."
+    do_ssh "KBN_STRESSOR_DIR=$remote_stressor_dir $stressor_executable --start"
+fi
+
 # Handle Instrumentation Setup
 remote_instr_dir="$(do_ssh mktemp -d)"
 for executable in "${instr_executables[@]}"; do
@@ -261,6 +287,15 @@ for executable in "${instr_executables[@]}"; do
     do_ssh "KBN_INSTRUMENT_DIR=$subdir $executable --after"
 done
 do_rsync_pull "$remote_instr_dir/" "$collected_files_dir/instrumentation/"
+
+# Stop and collect stressor
+if [ -n "$STRESSOR" ]; then
+    echo "Stopping stressor $STRESSOR..."
+    do_ssh "KBN_STRESSOR_DIR=$remote_stressor_dir $stressor_executable --stop"
+    mkdir -p "$collected_files_dir/stressors/$STRESSOR"
+    do_rsync_pull "$remote_stressor_dir/" "$collected_files_dir/stressors/$STRESSOR/"
+    do_ssh "rm -rf $remote_stressor_dir"
+fi
 
 # Fetch benchmark results
 local_tmpdir="${TMPDIR:-/tmp}/$(basename "$remote_tmpdir")"

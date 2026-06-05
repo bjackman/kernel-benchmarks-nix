@@ -150,6 +150,28 @@ pkgs.writeShellApplication {
         exit 1
     fi
 
+    # Test Case 4: Run with stressor
+    mkdir -p "$TMP_DIR/falba-db-stressor"
+    echo "Running Test Case 4: Run with stressor..."
+    ${lib.getExe run-benchprog} \
+        --falba-db "$TMP_DIR/falba-db-stressor" \
+        --no-copy \
+        --target root@127.0.0.1 \
+        --ssh-port "$PORT" \
+        --benchprog hello-world \
+        --stressor secretmem
+
+    echo "Verifying Test Case 4..."
+    if ! ls "$TMP_DIR"/falba-db-stressor/hello-world:*/artifacts/stressors/secretmem/status.json >/dev/null 2>&1; then
+        echo "Verification failed: status.json missing"
+        exit 1
+    fi
+    status_content=$(cat "$TMP_DIR"/falba-db-stressor/hello-world:*/artifacts/stressors/secretmem/status.json)
+    if [ "$status_content" != '{"stressed": true}' ]; then
+        echo "Verification failed: status.json content is wrong: $status_content"
+        exit 1
+    fi
+
     SUCCESS=true
     echo "Integration test passed successfully!"
   '';

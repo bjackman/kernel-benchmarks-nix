@@ -3,6 +3,7 @@
   lib,
   instruments,
   benchmarks,
+  stressors,
   ...
 }:
 pkgs.writeShellApplication rec {
@@ -32,6 +33,11 @@ pkgs.writeShellApplication rec {
         instrumentPaths = lib.mapAttrs (_: instrument: lib.getExe instrument) instruments;
       in
       pkgs.writers.writeJSON "instruments.json" instrumentPaths;
+    STRESSOR_REGISTRY_JSON =
+      let
+        stressorPaths = lib.mapAttrs (_: stressor: lib.getExe stressor) stressors;
+      in
+      pkgs.writers.writeJSON "stressors.json" stressorPaths;
   };
 
   text = builtins.readFile ./run-benchprog.sh;
