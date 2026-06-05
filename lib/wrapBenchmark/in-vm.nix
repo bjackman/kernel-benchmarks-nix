@@ -35,7 +35,12 @@ let
           systemd.services.kbn-guest = {
             script = ''
               set +e
-              ${lib.getExe wrappedProg} --out-dir /mnt/kbn-output
+              declare -a kbn_args_arr=()
+              if [ -n "''${KBN_ARGS:-}" ]; then
+                  read -a kbn_args_arr <<< "$KBN_ARGS"
+              fi
+
+              ${lib.getExe wrappedProg} --out-dir /mnt/kbn-output -- "''${kbn_args_arr[@]}"
               echo $? > /run/kbn-exit-code
             '';
             # Put all the stuff that a normal NixOS system has into the

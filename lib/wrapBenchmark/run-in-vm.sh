@@ -86,4 +86,17 @@ fi
 
 export KBN_OUTPUT_HOST="$OUT_DIR"
 export QEMU_OPTS
+
+BENCHPROG_ARGS=""
+if [ $# -gt 0 ]; then
+    # Shell-escape all arguments so they can be passed as a single string
+    # via systemd.setenv on the kernel command line, and later reconstructed
+    # in the guest VM preserving spaces/quotes (using `read -a` without `-r`).
+    BENCHPROG_ARGS=$(printf "%q " "$@")
+fi
+
+if [ -n "$BENCHPROG_ARGS" ]; then
+    export QEMU_KERNEL_PARAMS="${QEMU_KERNEL_PARAMS:-} systemd.setenv=KBN_ARGS=\"$BENCHPROG_ARGS\""
+fi
+
 exec "$KBN_VM_RUNNER"
