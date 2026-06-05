@@ -1,6 +1,7 @@
 # Expects:
 # - KBN_BENCH_NAME
 # - KBN_RAW_BENCH_EXE
+# - KBN_USE_SUDO
 
 OUT_DIR=
 
@@ -47,4 +48,8 @@ export OUT_DIR
 BASE_CACHE="${CACHE_DIRECTORY:-${XDG_CACHE_HOME:-${HOME:+$HOME/.cache}}}"
 export KBN_CACHE_DIR="$BASE_CACHE/kbn/$KBN_BENCH_NAME"
 mkdir -p "$KBN_CACHE_DIR"
-exec "$KBN_RAW_BENCH_EXE" "$@"
+if "$KBN_USE_SUDO"; then
+    exec sudo "$KBN_RAW_BENCH_EXE" "$@"
+else
+    exec "$KBN_RAW_BENCH_EXE" "$@"
+fi

@@ -14,16 +14,25 @@
   # Modules that are required for the host the benchprog is running in.
   nixosModules ? [ ],
   requiresInternet ? false,
+  # raw benchmark executable expects to run as root. This means integration
+  # tests will be run in a VM, and the wrapper will run it via sudo.
   requiresRoot ? false,
   worksInNixSandbox ? (!requiresInternet && !requiresRoot),
 }:
 let
   wrappedProg = pkgs.writeShellApplication {
     name = "${name}";
-    runtimeInputs = with pkgs; [ getopt ];
+    runtimeInputs = with pkgs; [
+      getopt
+      sudo
+    ];
     runtimeEnv = {
       KBN_BENCH_NAME = name;
       KBN_RAW_BENCH_EXE = lib.getExe rawBenchmark;
+      # Just use sudo unconditionally if we need root, assume sudoing is
+      # harmless if already root. Might want to change this if we want to run on
+      # weird platforms one day.
+      KBN_USE_SUDO = lib.boolToString requiresRoot;
     };
     text = builtins.readFile ./wrapper.sh;
   };
